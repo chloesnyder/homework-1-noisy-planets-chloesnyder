@@ -89,23 +89,29 @@ vec3 squareToSphere(float theta, float phi)
 }
 
 
+
+
 void main()
 {
     vec4 pos = vs_Pos;
     vec2 uv = convertToUV(pos, sphereCenter); // convert worldspace vector into polar uv coordinates
 
-    const int numCircles = 48;
+    fs_UV = uv;
+
+    const int numCircles = 100;
     vec3 samples[numCircles];
     float radii[numCircles];
     int count = 0;
 
-    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (15.f * PI/180.f))
+    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (18.f * PI/180.f))
     {
-        for(float phi = 0.f; phi < 2.f * PI ; phi += (60.f * PI/180.f))
+        for(float phi = 0.f; phi < 2.f * PI ; phi += (16.f * PI/180.f))
         {
             float thetaOffset = cos_interp(theta, phi, phi);
             float phiOffset = cos_interp(phi, theta, thetaOffset);
-            vec3 spherePt = squareToSphere(theta + phi * thetaOffset, phi + theta * phiOffset);
+            float u = theta + phi * thetaOffset;
+            float v = phi + theta * phiOffset;
+            vec3 spherePt = squareToSphere(u, v);
             samples[count] = spherePt;
             radii[count] = .1f * cos_interp(thetaOffset, phiOffset, float(count));
             count += 1;
@@ -113,22 +119,29 @@ void main()
     }
 
 
-    fs_Col = vec4(0.f,0.f,0.f,1.f);
+    fs_Col = vec4(.5f,0.5f,0.5f,1.f);
     displacement = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
         float dist = distance(pos.xyz, samples[i]);
-        if(dist <= radii[i])
+        float cx = pos.x + dist * sin(pos.z / 5.f);
+        float cy = pos.y + dist * sin(pos.z / 3.f);
+        radii[i] += .1 * cos(sqrt(99.f * cx*cx + cy*cy + 1.f)+dist);
+        if(dist <= pow(radii[i], 2.f))
         {
-            fs_Col = vec4(1.f,1.f,1.f,1.f);
+            
             float domeDist = 1.f - dist / radii[i];
             // TODO: figure out a way to randomly generate a scale factor [0,1]
+            
             float scale = pow(.5f, domeDist);
-            displacement += cos_interp(0.f, 1.f, scale * domeDist);
+            scale = cos(sqrt(100.f * scale * scale + domeDist*domeDist + 1.f)+dist);
+            float scale2 = lin_interp(0.8f, 2.f, dist);
+            displacement += abs(pow(scale2, clamp(0.f, 1.f, sin(cos_interp(0.f, 1.f, scale * domeDist)))));
+            fs_Col = scale2 * vec4(.1f, .1f, .1f, 1.f);//clamp(0.f, 1.f, cos(displacement)) * vec4(0.f,1.f,1.f,1.f);
         } 
     }
 
-    pos -= displacement * vs_Nor * .1;
+    pos -= (displacement * vs_Nor * .1);
 
     float xnor = mix(vs_Nor.x, vs_Nor.y, displacement);
     float ynor = mix(vs_Nor.y, vs_Nor.z, xnor);
