@@ -79,11 +79,11 @@ vec3 squareToSphere(float theta, float phi)
 {   
     float x = sin(theta) * cos(phi);
     float y = sin(theta) * sin(phi);
-    float z = 1.f - 2.f * cos(theta);
+    float z = 1.f - (2.f * cos(theta));
     float e1 = cos(theta);
     float e2 = phi / (2.f * PI);
-    float xnew = cos(2.f*PI*e2) * sqrt(1.f - pow(z,2.f));
-    float ynew = sin(2.f*PI*e2) * sqrt(1.f - pow(z,2.f));
+    float xnew = cos(2.f*PI*e2) * sqrt(1.f - z * z);
+    float ynew = sin(2.f*PI*e2) * sqrt(1.f - z * z);
     float znew = 1.f - 2.f*e1;
     return vec3(xnew,ynew,znew);
 }
@@ -94,20 +94,20 @@ void main()
     vec4 pos = vs_Pos;
     vec2 uv = convertToUV(pos, sphereCenter); // convert worldspace vector into polar uv coordinates
 
-    const int numCircles = 9;
+    const int numCircles = 48;
     vec3 samples[numCircles];
     float radii[numCircles];
     int count = 0;
 
-    for(float theta = 0.f; theta <= 90.f; theta += 30.f)
+    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (15.f * PI/180.f))
     {
-        for(float phi = 0.f; phi <= 360.f; phi += (120.f))
+        for(float phi = 0.f; phi < 2.f * PI ; phi += (60.f * PI/180.f))
         {
-            theta *= PI / 180.f;
-            phi *= PI / 180.f;
-            vec3 spherePt = squareToSphere(theta, phi);
+            float thetaOffset = cos_interp(theta, phi, phi);
+            float phiOffset = cos_interp(phi, theta, thetaOffset);
+            vec3 spherePt = squareToSphere(theta + phi * thetaOffset, phi + theta * phiOffset);
             samples[count] = spherePt;
-            radii[count] = .1f;
+            radii[count] = .1f * cos_interp(thetaOffset, phiOffset, float(count));
             count += 1;
         }
     }
@@ -123,16 +123,22 @@ void main()
             fs_Col = vec4(1.f,1.f,1.f,1.f);
             float domeDist = 1.f - dist / radii[i];
             // TODO: figure out a way to randomly generate a scale factor [0,1]
-            float scale = 1.f;
+            float scale = pow(.5f, domeDist);
             displacement += cos_interp(0.f, 1.f, scale * domeDist);
         } 
     }
 
     pos -= displacement * vs_Nor * 0.1f;
+
+    float xnor = mix(vs_Nor.x, vs_Nor.y, fract(vs_Nor.z));
+    float ynor = mix(vs_Nor.y, vs_Nor.z, fract(vs_Nor.x));
+    float znor = mix(ynor, xnor, fract(vs_Nor.y));
+
+    vec3 newNor = vec3(xnor,ynor,znor);
     
 
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
+    fs_Nor = vec4(invTranspose * newNor, 0);          // Pass the vertex normals to the fragment shader for interpolation.
                                                             // Transform the geometry's normals by the inverse transpose of the
                                                             // model matrix. This is necessary to ensure the normals remain
                                                             // perpendicular to the surface after the surface is transformed by
