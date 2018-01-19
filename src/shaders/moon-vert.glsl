@@ -128,10 +128,10 @@ void main()
         } 
     }
 
-    pos -= displacement * vs_Nor * 0.1f;
+    pos -= displacement * vs_Nor * .1;
 
-    float xnor = mix(vs_Nor.x, vs_Nor.y, fract(vs_Nor.z));
-    float ynor = mix(vs_Nor.y, vs_Nor.z, fract(vs_Nor.x));
+    float xnor = mix(vs_Nor.x, vs_Nor.y, displacement);
+    float ynor = mix(vs_Nor.y, vs_Nor.z, xnor);
     float znor = mix(ynor, xnor, fract(vs_Nor.y));
 
     vec3 newNor = vec3(xnor,ynor,znor);

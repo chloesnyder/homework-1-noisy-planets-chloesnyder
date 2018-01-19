@@ -37,12 +37,12 @@ vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d)
 
 void main()
 {
-        vec3 a = vec3(0.5, 0.5, 0.5);
-        vec3 b = vec3(0.2, 0.2, 0.2);
-        vec3 c = vec3(1.f, 1.f, 1.f);
-        vec3 d = vec3(0.f, 0.0f, 0.f);
+        vec3 b = vec3(0.6, 0.6, 0.7);
+        vec3 c = vec3(0.2, 0.2, 0.2);
+        vec3 d = vec3(8.f, 8.f, 9.f);
+        vec3 a = vec3(0.f, 0.0f, 0.f);
 
-       vec4 diffuseColor = vec4(palette(displacement + .5f, a, b, c, d),1.f);
+       vec4 diffuseColor = fs_Nor + vec4(palette(displacement, a, b, c, d),1.f);
 
         out_Col = diffuseColor;
 }
