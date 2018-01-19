@@ -103,6 +103,11 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/moon-frag.glsl')),
   ])
 
+  const moonShader2 = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/moon2-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/moon2-frag.glsl')),
+  ])
+
 
   function changeShader(){
   if(controls.shader == 'lambert')
@@ -154,7 +159,7 @@ if(controls.geometry == 'cube')
        currGeometry
     ], vec4color, time, eye);*/
 
-    renderer.render(camera, moonShader, [
+    renderer.render(camera, moonShader2, [
       icosphere
    ], vec4color, time, eye);
 
