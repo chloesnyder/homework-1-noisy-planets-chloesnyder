@@ -36,6 +36,7 @@ out vec4 fs_Pos;
 out vec2 fs_UV;
 
 out float displacement;
+out vec4 fs_Tangent;
 
 const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
 
@@ -73,6 +74,49 @@ float cos_interp(float a, float b, float t)
     return lin_interp(a,b,cos_t);
 }
 
+//https://thebookofshaders.com/13/
+float random (vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+// Based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise (vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+
+    vec2 u = f * f * (3.0 - 2.0 * f);
+
+    return mix(a, b, u.x) +
+            (c - a)* u.y * (1.0 - u.x) +
+            (d - b) * u.x * u.y;
+}
+
+#define OCTAVES 6
+float fbm (vec2 st) {
+    // Initial values
+    float value = 0.0;
+    float amplitude = .5;
+    float frequency = 0.;
+    //
+    // Loop of octaves
+    for (int i = 0; i < OCTAVES; i++) {
+        value += amplitude * noise(st);
+        st *= 2.;
+        amplitude *= .5;
+    }
+    return value;
+}
+
+
 // given theta E [0, pi/2] and phi E [0, 2pi]
 // convert square to sphere coords
 vec3 squareToSphere(float theta, float phi)
@@ -88,27 +132,42 @@ vec3 squareToSphere(float theta, float phi)
     return vec3(xnew,ynew,znew);
 }
 
+vec3 getTangent(vec3 nor)
+{
+    vec3 c1 = cross(nor, vec3(0, 0, 1));
+    vec3 c2 = cross(nor, vec3(0, 1, 0));
+    if (length(c1) > length (c2))
+    {
+        return c1;
+    } else  {
+        return c2;
+    }
+}
 
 void main()
 {
     vec4 pos = vs_Pos;
     vec2 uv = convertToUV(pos, sphereCenter); // convert worldspace vector into polar uv coordinates
 
-    const int numCircles = 48;
+    const int numCircles = 2 * 12 * 9;
     vec3 samples[numCircles];
     float radii[numCircles];
     int count = 0;
 
-    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (15.f * PI/180.f))
+    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (10.f * PI/180.f))
     {
-        for(float phi = 0.f; phi < 2.f * PI ; phi += (60.f * PI/180.f))
+        for(float phi = 0.f; phi < 2.f * PI ; phi += (30.f * PI/180.f))
         {
-            float thetaOffset = cos_interp(theta, phi, phi);
-            float phiOffset = cos_interp(phi, theta, thetaOffset);
-            vec3 spherePt = squareToSphere(theta + phi * thetaOffset, phi + theta * phiOffset);
+            float fbm1 = fbm(vec2(phi, theta));
+            float fbm2 = fbm(vec2(theta, phi));
+            float thetaOffset = cos_interp(theta, phi, fbm(vec2(fbm1, fbm2)));
+            float phiOffset = cos_interp(fbm1, theta, thetaOffset);
+            vec3 spherePt = squareToSphere(theta + fbm1 + phi * thetaOffset, phi + fbm2 + theta * phiOffset);
             samples[count] = spherePt;
-            radii[count] = .1f * cos_interp(thetaOffset, phiOffset, float(count));
-            count += 1;
+            radii[count] = .12f * cos_interp(thetaOffset, phiOffset, noise(vec2(float(count), fbm2)));
+            samples[count + 1] = -spherePt;
+            radii[count+1] = .4 * cos_interp(fbm1, phiOffset, noise(vec2(phi, fbm2)));
+            count += 2;
         }
     }
 
@@ -128,14 +187,15 @@ void main()
         } 
     }
 
-    pos -= displacement * vs_Nor * .1;
-
-    float xnor = mix(vs_Nor.x, vs_Nor.y, displacement);
-    float ynor = mix(vs_Nor.y, vs_Nor.z, xnor);
-    float znor = mix(ynor, xnor, fract(vs_Nor.y));
-
-    vec3 newNor = vec3(xnor,ynor,znor);
     
+
+   float fbm = fbm(convertToUV(vs_Nor, sphereCenter));
+
+    vec3 newNor = fbm * vec3(vs_Nor);
+
+    fs_Tangent = vec4(getTangent(newNor),0.f);
+    
+    pos -= displacement * vs_Nor * .1 * fbm;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * newNor, 0);          // Pass the vertex normals to the fragment shader for interpolation.
