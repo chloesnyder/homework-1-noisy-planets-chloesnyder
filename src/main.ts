@@ -17,7 +17,7 @@ let cube: Cube;
 let time = 0;
 let currShader: ShaderProgram;
 let currGeometry: Drawable;
-let numTesselations = 5;
+let numTesselations = 6;
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
@@ -55,7 +55,7 @@ function main() {
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.addColor(controls, 'color');
   gui.add(controls, 'Load Scene');
-  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy']);
+  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon']);
   gui.add(controls, 'geometry',['cube', 'icosphere', 'square'] );
 
   // get canvas and webgl context
@@ -98,6 +98,11 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/melting2-frag.glsl')),
   ])
 
+  const moonShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/moon-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/moon-frag.glsl')),
+  ])
+
 
   function changeShader(){
   if(controls.shader == 'lambert')
@@ -109,6 +114,8 @@ function main() {
     currShader = meltingShader;
   } else if (controls.shader == 'drippy') {
     currShader = meltingShader2;
+  } else if (controls.shader == 'moon') {
+    currShader = moonShader;
   }
 }
 
@@ -140,12 +147,16 @@ if(controls.geometry == 'cube')
     renderer.clear();
     var eye = vec4.fromValues(camera.controls.eye[0], camera.controls.eye[1], camera.controls.eye[2], 1);
     var vec4color = vec4.fromValues(controls.color[0] / 255, controls.color[1] / 255, controls.color[2] / 255, 1);
-    changeShader();
-    changeGeometry();
+  //  changeShader();
+    //changeGeometry();
 
-    renderer.render(camera, currShader, [
+  /*  renderer.render(camera, currShader, [
        currGeometry
-    ], vec4color, time, eye);
+    ], vec4color, time, eye);*/
+
+    renderer.render(camera, lambert, [
+      icosphere
+   ], vec4color, time, eye);
 
     stats.end();
     time++;
