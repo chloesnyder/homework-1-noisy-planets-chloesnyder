@@ -54,8 +54,6 @@ vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 bool inCircle(vec2 P, vec2 center, float radius)
 {
     //test to see if current vector is inside circle
-    float epsilon = .00001f;
-
     if(distance(P, center) < radius)
     {
         return true;
@@ -100,7 +98,7 @@ float noise (vec2 st) {
             (d - b) * u.x * u.y;
 }
 
-#define OCTAVES 6
+#define OCTAVES 3
 float fbm (vec2 st) {
     // Initial values
     float value = 0.0;
@@ -160,19 +158,19 @@ void main()
         {
             float fbm1 = fbm(vec2(phi, theta));
             float fbm2 = fbm(vec2(theta, phi));
-            float thetaOffset = cos_interp(theta, phi, fbm(vec2(fbm1, fbm2)));
+            float thetaOffset = cos_interp(theta, phi, fbm2);
             float phiOffset = cos_interp(fbm1, theta, thetaOffset);
             vec3 spherePt = squareToSphere(theta + fbm1 + phi * thetaOffset, phi + fbm2 + theta * phiOffset);
             samples[count] = spherePt;
-            radii[count] = .12f * cos_interp(thetaOffset, phiOffset, noise(vec2(float(count), fbm2)));
+            radii[count] = .12f * cos_interp(thetaOffset, phiOffset, fbm1);
             samples[count + 1] = -spherePt;
-            radii[count+1] = .4 * cos_interp(fbm1, phiOffset, noise(vec2(phi, fbm2)));
+            radii[count+1] = .4 * cos_interp(fbm1, phiOffset, fbm2);
             count += 2;
         }
     }
 
 
-    fs_Col = vec4(0.f,0.f,0.f,1.f);
+    fs_Col = vec4(0.5f,0.5f,0.5f,1.f);
     displacement = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
@@ -189,13 +187,13 @@ void main()
 
     
 
-   float fbm = fbm(convertToUV(vs_Nor, sphereCenter));
+   float fbm = fbm(convertToUV(vs_Pos, sphereCenter));
 
     vec3 newNor = fbm * vec3(vs_Nor);
 
     fs_Tangent = vec4(getTangent(newNor),0.f);
     
-    pos -= displacement * vs_Nor * .1 * fbm;
+    pos -= displacement * vec4(newNor,0.f) * .1 * fbm;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * newNor, 0);          // Pass the vertex normals to the fragment shader for interpolation.
