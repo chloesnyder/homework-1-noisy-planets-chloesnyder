@@ -189,7 +189,7 @@ void main()
 
    float fbm = fbm(convertToUV(vs_Pos, sphereCenter));
 
-    vec3 newNor = fbm * vec3(vs_Nor);
+    vec3 newNor = vec3(fbm) + vec3(vs_Nor);
 
     fs_Tangent = vec4(getTangent(newNor),0.f);
     

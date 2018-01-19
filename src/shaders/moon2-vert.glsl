@@ -123,6 +123,9 @@ void main()
     displacement = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
+        // Displace along sin curve
+
+        
         float dist = distance(pos.xyz, samples[i]);
         float cx = pos.x + dist * sin(pos.z / 5.f);
         float cy = pos.y + dist * sin(pos.z / 3.f);
@@ -130,15 +133,25 @@ void main()
         if(dist <= pow(radii[i], 2.f))
         {
             
-            float domeDist = 1.f - dist / radii[i];
-            // TODO: figure out a way to randomly generate a scale factor [0,1]
+           // float domeDist = 1.f - dist / radii[i];
+            float t = clamp(0.f, 1.f, dist / radii[i]);
+            
+            displacement += sin(t * PI / 2.0);
+            fs_Col = displacement *  vec4(0.f,1.f,1.f,1.f);
+            /*// TODO: figure out a way to randomly generate a scale factor [0,1]
             
             float scale = pow(.5f, domeDist);
             scale = cos(sqrt(100.f * scale * scale + domeDist*domeDist + 1.f)+dist);
             float scale2 = lin_interp(0.8f, 2.f, dist);
             displacement += abs(pow(scale2, clamp(0.f, 1.f, sin(cos_interp(0.f, 1.f, scale * domeDist)))));
-            fs_Col = scale2 * vec4(.1f, .1f, .1f, 1.f);//clamp(0.f, 1.f, cos(displacement)) * vec4(0.f,1.f,1.f,1.f);
+            fs_Col = scale2 * vec4(.1f, .1f, .1f, 1.f);//clamp(0.f, 1.f, cos(displacement)) * vec4(0.f,1.f,1.f,1.f);*/
         } 
+        if(dist > pow(radii[i], 2.f) && dist < pow(radii[i], 2.f) + .05f)
+        {
+            float t = clamp(0.f, 1.f, dist / radii[i]);
+            displacement -= pow(2.f, t) / 15.f;
+            fs_Col = displacement *  vec4(0.f,1.f,1.f,1.f);
+        }
     }
 
     pos -= (displacement * vs_Nor * .1);
