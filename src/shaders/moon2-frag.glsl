@@ -25,7 +25,7 @@ in vec4 fs_Col;
 in vec4 fs_Pos;
 
 in vec2 fs_UV;
-in float displacement;
+in float displacement, dx, dy, dz;
 
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
@@ -91,13 +91,22 @@ void main()
             st.x *= displacement;
             vec4 diffuseColor = fs_Col;//vec4(palette(displacement, a, b, c, d),1.f);
             float noise = fbm(st*2.0f + displacement);
-            diffuseColor += vec4(noise, noise, noise, 0.f);
-
+            diffuseColor += vec4(noise, noise, noise, 0.f);*/
         
-    //    } else {
+        vec4 diffuseColor = vec4(.5, .5, .5, 1.f) - abs(vec4(dx+dy+dz, dy+dx+dz, dz+dy+dx, 0.0)) + vec4(displacement, displacement, displacement,1.f);
 
-//        }*/
+        // Calculate the diffuse term for Lambert shading
+        float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
+        // Avoid negative lighting values
+        // diffuseTerm = clamp(diffuseTerm, 0, 1);
 
-    out_Col = fs_Col;
-     
+        float ambientTerm = 0.2;
+
+        float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+                                                            //to simulate ambient lighting. This ensures that faces that are not
+                                                            //lit by our point light are not completely black.
+
+        // Compute final shaded color
+        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+
 }

@@ -35,7 +35,7 @@ out vec4 fs_Pos;
 
 out vec2 fs_UV;
 
-out float displacement;
+out float displacement, dx, dy, dz;
 
 const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
 
@@ -88,7 +88,46 @@ vec3 squareToSphere(float theta, float phi)
     return vec3(xnew,ynew,znew);
 }
 
+float random (in vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
 
+// Based on Morgan McGuire @morgan3d
+// https://www.shadertoy.com/view/4dS3Wd
+float noise (vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+
+    vec2 u = f * f * (3.0 - 2.0 * f);
+
+    return mix(a, b, u.x) +
+            (c - a)* u.y * (1.0 - u.x) +
+            (d - b) * u.x * u.y;
+}
+
+#define OCTAVES 6
+float fbm (vec2 st) {
+    // Initial values
+    float value = 0.0;
+    float amplitude = .5;
+    float frequency = 0.;
+    //
+    // Loop of octaves
+    for (int i = 0; i < OCTAVES; i++) {
+        value += amplitude * noise(st);
+        st *= 2.;
+        amplitude *= .5;
+    }
+    return value;
+}
 
 
 void main()
@@ -101,6 +140,7 @@ void main()
     const int numCircles = 100;
     vec3 samples[numCircles];
     float radii[numCircles];
+    vec2 phiThetaPair[numCircles];
     int count = 0;
 
     for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (18.f * PI/180.f))
@@ -114,13 +154,15 @@ void main()
             vec3 spherePt = squareToSphere(u, v);
             samples[count] = spherePt;
             radii[count] = .1f * cos_interp(thetaOffset, phiOffset, float(count));
+            phiThetaPair[count] = vec2(phi, theta);
             count += 1;
         }
     }
 
 
     fs_Col = vec4(.5f,0.5f,0.5f,1.f);
-    displacement = 0.f;
+    
+    displacement, dx, dy, dz = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
         // Displace along sin curve
@@ -133,38 +175,50 @@ void main()
         if(dist <= pow(radii[i], 2.f))
         {
             
-           // float domeDist = 1.f - dist / radii[i];
+           /*// float domeDist = 1.f - dist / radii[i];
             float t = clamp(0.f, 1.f, dist / radii[i]);
             
-            displacement += sin(t * PI / 2.0);
-            fs_Col = displacement *  vec4(0.f,1.f,1.f,1.f);
-            /*// TODO: figure out a way to randomly generate a scale factor [0,1]
-            
-            float scale = pow(.5f, domeDist);
-            scale = cos(sqrt(100.f * scale * scale + domeDist*domeDist + 1.f)+dist);
-            float scale2 = lin_interp(0.8f, 2.f, dist);
-            displacement += abs(pow(scale2, clamp(0.f, 1.f, sin(cos_interp(0.f, 1.f, scale * domeDist)))));
-            fs_Col = scale2 * vec4(.1f, .1f, .1f, 1.f);//clamp(0.f, 1.f, cos(displacement)) * vec4(0.f,1.f,1.f,1.f);*/
+            //displacement += sin(t * PI / 3.0);
+
+         //    pos -= (displacement * vs_Nor * .1);*/
+           //  fs_Col = pos;
+        
+        float t2 = clamp(0.f, 1.f, dist / radii[i]);
+        float t = clamp(0.f, 1.f, 1.f - dist / radii[i]);
+        float theta = dist; 
+        float phi = dist;
+   
+        dx += .3 * (1.f-dist) * cos(theta)*sin(phi) * vs_Nor.x;
+        dy += .3 * (1.f-dist) * sin(theta)*sin(phi) * vs_Nor.y;
+        dz += .3 * (1.f-dist) * cos(phi) * vs_Nor.z;
+       // pos.x -= dx;
+        //pos.y -= dy;
+       // pos.z -= dz;
+        
         } 
-        if(dist > pow(radii[i], 2.f) && dist < pow(radii[i], 2.f) + .05f)
+        if(dist > pow(radii[i], 2.f )  && dist < pow(radii[i], 2.f) + .05f)
         {
             float t = clamp(0.f, 1.f, dist / radii[i]);
-            displacement -= pow(2.f, t) / 15.f;
-            fs_Col = displacement *  vec4(0.f,1.f,1.f,1.f);
+            displacement += pow(2.0, t) / 10.f ;
+            //fs_Col = displacement *  vec4(0.5f,.5f,.5f,1.f);
+            //pos += (displacement * vs_Nor * .1);
         }
     }
 
-    pos -= (displacement * vs_Nor * .1);
 
-    float xnor = mix(vs_Nor.x, vs_Nor.y, displacement);
-    float ynor = mix(vs_Nor.y, vs_Nor.z, xnor);
-    float znor = mix(ynor, xnor, fract(vs_Nor.y));
-
-    vec3 newNor = vec3(xnor,ynor,znor);
+        pos.x -= dx;
+        pos.y -= dy;
+        pos.z -= dz;
+        pos += (displacement * vs_Nor * .1);
+        
+        float offsetX = fbm(vec2(vs_Nor.x, pos.x));
+        float offsetY = fbm(vec2(vs_Nor.y, pos.y));
+        float offsetZ = fbm(vec2(vs_Nor.z, pos.z));
+        vec4 offset = vec4(offsetX, offsetY, offsetZ, 0.f);
     
 
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = vec4(invTranspose * newNor, 0);          // Pass the vertex normals to the fragment shader for interpolation.
+    fs_Nor = vec4(invTranspose * vec3(vs_Nor * offset), 0);          // Pass the vertex normals to the fragment shader for interpolation.
                                                             // Transform the geometry's normals by the inverse transpose of the
                                                             // model matrix. This is necessary to ensure the normals remain
                                                             // perpendicular to the surface after the surface is transformed by
