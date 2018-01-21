@@ -93,7 +93,9 @@ void main()
             float noise = fbm(st*2.0f + displacement);
             diffuseColor += vec4(noise, noise, noise, 0.f);*/
         
-        vec4 diffuseColor = vec4(.5, .5, .5, 1.f) - abs(vec4(dx+dy+dz, dy+dx+dz, dz+dy+dx, 0.0)) + vec4(displacement, displacement, displacement,1.f);
+       // vec4 diffuseColor = vec4(.5,.5,.5,1.f);//vec4(.5, .5, .5, 1.f) - abs(vec4(dx+dy+dz, dy+dx+dz, dz+dy+dx, 0.0)) + vec4(displacement, displacement, displacement,1.f);
+
+        vec4 diffuseColor = normalize(vec4(.5,.5,.5,1.f) - vec4(vec3(displacement/2.5f),0.f));
 
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));

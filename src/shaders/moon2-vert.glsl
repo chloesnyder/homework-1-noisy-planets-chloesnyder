@@ -175,41 +175,54 @@ void main()
         if(dist <= pow(radii[i], 2.f))
         {
             
-           /*// float domeDist = 1.f - dist / radii[i];
+            float domeDist = 1.f - dist / radii[i];
             float t = clamp(0.f, 1.f, dist / radii[i]);
             
-            //displacement += sin(t * PI / 3.0);
+            displacement += sin(t * PI / 3.0);
 
          //    pos -= (displacement * vs_Nor * .1);*/
            //  fs_Col = pos;
         
-        float t2 = clamp(0.f, 1.f, dist / radii[i]);
+       /* float t2 = clamp(0.f, 1.f, dist / radii[i]);
         float t = clamp(0.f, 1.f, 1.f - dist / radii[i]);
         float theta = dist; 
         float phi = dist;
    
         dx += .3 * (1.f-dist) * cos(theta)*sin(phi) * vs_Nor.x;
-        dy += .3 * (1.f-dist) * sin(theta)*sin(phi) * vs_Nor.y;
-        dz += .3 * (1.f-dist) * cos(phi) * vs_Nor.z;
-       // pos.x -= dx;
-        //pos.y -= dy;
-       // pos.z -= dz;
+        dy += .05 * (1.f-dist) * sin(theta)*sin(phi) * vs_Nor.y;
+        dz += .05 * (1.f-dist) * cos(phi) * vs_Nor.z;
+        pos.x -= dx;
+        pos.y -= dy;
+        pos.z -= dz;*/
         
         } 
-        if(dist > pow(radii[i], 2.f )  && dist < pow(radii[i], 2.f) + .05f)
+        float r2 = pow(radii[i], 2.f);
+
+        if(dist > r2 && dist < r2 + .03)
         {
             float t = clamp(0.f, 1.f, dist / radii[i]);
-            displacement += pow(2.0, t) / 10.f ;
+           // displacement += pow(2.0, t) / 10.f ;
             //fs_Col = displacement *  vec4(0.5f,.5f,.5f,1.f);
-            //pos += (displacement * vs_Nor * .1);
+            pos += ((pow(2.0, t) / 10.f) * vs_Nor * .1);
         }
     }
 
 
-        pos.x -= dx;
-        pos.y -= dy;
-        pos.z -= dz;
-        pos += (displacement * vs_Nor * .1);
+        float noise = cos(sin(displacement));//fbm(vec2(radii[i], dist));
+        float noise2 = cos(noise);fbm(vec2(noise, noise));
+
+         if(fract(noise * noise2) < 1.f )
+        {
+            //float t = clamp(0.f, 1.f, dist / radii[i]);
+          ///  displacement += pow(2.0, displacement) / 10.f ;
+            //fs_Col = displacement *  vec4(0.5f,.5f,.5f,1.f);
+          pos += ((pow(2.0, displacement) / 10.f) * vs_Nor * .1);
+        }
+
+      ///  pos.x -= dx;
+       // pos.y -= dy;
+       // pos.z -= dz;
+        pos -= (displacement * vs_Nor * .1);
         
         float offsetX = fbm(vec2(vs_Nor.x, pos.x));
         float offsetY = fbm(vec2(vs_Nor.y, pos.y));
