@@ -31,57 +31,22 @@ out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
 // referenced: https://thebookofshaders.com/13/
-
-vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d)
-{
-     return a + b*cos(6.28318f * (c*t+d));
-}  
-
-float random (in vec2 st) {
-    return fract(sin(dot(st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
+vec3 random3D (vec3 st) {
+    float x = fract(sin(dot(st.xyz,
+                         vec3(12.9898,78.233,78.233)))*
+        52758.5453123);
+    float y = fract(sin(dot(st.xyz,
+                         vec3(134578989.8,7131.233,78.233)))*
+        454.53123);
+    float z = fract(sin(dot(st.xyz,
+                         vec3(18.23498,72.25333,5438.233)))*
+        43714791.53123);
+    return(vec3(x,y,z));
 }
-
-// Based on Morgan McGuire @morgan3d
-// https://www.shadertoy.com/view/4dS3Wd
-float noise (vec2 st) {
-    vec2 i = floor(st);
-    vec2 f = fract(st);
-
-    // Four corners in 2D of a tile
-    float a = random(i);
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-
-    vec2 u = f * f * (3.0 - 2.0 * f);
-
-    return mix(a, b, u.x) +
-            (c - a)* u.y * (1.0 - u.x) +
-            (d - b) * u.x * u.y;
-}
-
-#define OCTAVES 6
-float fbm (vec2 st) {
-    // Initial values
-    float value = 0.0;
-    float amplitude = .5;
-    float frequency = 0.;
-    //
-    // Loop of octaves
-    for (int i = 0; i < OCTAVES; i++) {
-        value += amplitude * noise(st);
-        st *= 2.;
-        amplitude *= .5;
-    }
-    return value;
-}
-
 
 void main()
 {
-        vec4 diffuseColor = fs_Col;//normalize(vec4(.5,.5,.5,1.f) - vec4(vec3(displacement/2.5f),0.f));
+        vec4 diffuseColor = fs_Col;
 
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
@@ -94,7 +59,30 @@ void main()
                                                             //to simulate ambient lighting. This ensures that faces that are not
                                                             //lit by our point light are not completely black.
 
+    float scalar = 5.;
+    float summedNoise = 0.0;
+    float amplitude = 0.5; 
+    vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
+    float minDist = 10.0;
+    for(int i = -1; i <= 1; ++i)
+    {
+        for(int j = -1; j <= 1; ++j)
+        {
+            for(int k = -1; k <= 1; ++k)
+            {
+                vec3 gridCellCorner = floor(gridSpacePoint) + vec3(float(i), float(j), float(k));
+                vec3 worleyPoint = random3D(gridCellCorner);
+                float dist = distance(worleyPoint + gridCellCorner, gridSpacePoint);
+                minDist = min(minDist, dist);
+                summedNoise += minDist * amplitude;
+                amplitude *= .5;
+            }
+        }
+    }
+    vec3 color = .5 * vec3(minDist);
+                                                     
+
         // Compute final shaded color
-        out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
+        out_Col = vec4((color.rgb + diffuseColor.rgb) * lightIntensity, diffuseColor.a);
 
 }

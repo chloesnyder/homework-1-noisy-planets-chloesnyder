@@ -169,7 +169,7 @@ if(controls.geometry == 'cube')
        currGeometry
     ], vec4color, time, eye);*/
 
-    renderer.render(camera, planetShader, [
+    renderer.render(camera, moonShader, [
       icosphere
    ], vec4color, time, eye, light);
 

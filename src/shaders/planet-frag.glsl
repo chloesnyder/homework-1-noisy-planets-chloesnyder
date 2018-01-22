@@ -98,7 +98,7 @@ void main() {
     out_Col = vec4(color,1.0);*/
 
 
-    float scalar = 5.0;
+    float scalar = sqrt(3.0);
     vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
     float minDist = 10.0;
     for(int i = -1; i <= 1; ++i)
