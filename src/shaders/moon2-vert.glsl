@@ -178,7 +178,7 @@ void main()
             float domeDist = 1.f - dist / radii[i];
             float t = clamp(0.f, 1.f, dist / radii[i]);
             
-            displacement += sin(t * PI / 3.0);
+            displacement += abs(sin(t * PI / 3.0));
 
          //    pos -= (displacement * vs_Nor * .1);*/
            //  fs_Col = pos;

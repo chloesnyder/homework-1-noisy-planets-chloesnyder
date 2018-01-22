@@ -55,7 +55,7 @@ function main() {
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.addColor(controls, 'color');
   gui.add(controls, 'Load Scene');
-  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon']);
+  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon', 'moon2', 'planet']);
   gui.add(controls, 'geometry',['cube', 'icosphere', 'square'] );
 
   // get canvas and webgl context
@@ -98,14 +98,19 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/melting2-frag.glsl')),
   ])
 
-  const moonShader = new ShaderProgram([
+  const moonShader2 = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/moon-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/moon-frag.glsl')),
   ])
 
-  const moonShader2 = new ShaderProgram([
+  const moonShader = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/moon2-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/moon2-frag.glsl')),
+  ])
+
+  const planetShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/planet-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/planet-frag.glsl')),
   ])
 
 
@@ -121,6 +126,10 @@ function main() {
     currShader = meltingShader2;
   } else if (controls.shader == 'moon') {
     currShader = moonShader;
+  } else if (controls.shader == 'moon2') {
+    currShader = moonShader2;
+  } else if (controls.shader == 'planet') {
+    currShader = planetShader;
   }
 }
 
@@ -152,14 +161,14 @@ if(controls.geometry == 'cube')
     renderer.clear();
     var eye = vec4.fromValues(camera.controls.eye[0], camera.controls.eye[1], camera.controls.eye[2], 1);
     var vec4color = vec4.fromValues(controls.color[0] / 255, controls.color[1] / 255, controls.color[2] / 255, 1);
-  //  changeShader();
-    //changeGeometry();
+    changeShader();
+    changeGeometry();
 
-  /*  renderer.render(camera, currShader, [
+    /*renderer.render(camera, currShader, [
        currGeometry
     ], vec4color, time, eye);*/
 
-    renderer.render(camera, moonShader2, [
+    renderer.render(camera, planetShader, [
       icosphere
    ], vec4color, time, eye);
 
