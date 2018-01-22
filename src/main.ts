@@ -161,6 +161,7 @@ if(controls.geometry == 'cube')
     renderer.clear();
     var eye = vec4.fromValues(camera.controls.eye[0], camera.controls.eye[1], camera.controls.eye[2], 1);
     var vec4color = vec4.fromValues(controls.color[0] / 255, controls.color[1] / 255, controls.color[2] / 255, 1);
+    var light = vec4.fromValues(10, 10, 10, 1);
     changeShader();
     changeGeometry();
 
@@ -168,9 +169,9 @@ if(controls.geometry == 'cube')
        currGeometry
     ], vec4color, time, eye);*/
 
-    renderer.render(camera, planetShader, [
+    renderer.render(camera, moonShader, [
       icosphere
-   ], vec4color, time, eye);
+   ], vec4color, time, eye, light);
 
     stats.end();
     time++;

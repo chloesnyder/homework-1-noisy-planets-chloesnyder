@@ -15,6 +15,8 @@ uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformati
                             // We've written a static matrix for you to use for HW2,
                             // but in HW3 you'll have to generate one yourself
 
+uniform vec4 u_Light;
+
 uniform float u_Time;
 
 uniform vec4 u_Eye;
@@ -159,10 +161,8 @@ void main()
         }
     }
 
-
-    fs_Col = vec4(.5f,0.5f,0.5f,1.f);
-    
-    displacement, dx, dy, dz = 0.f;
+    vec3 centerCol;
+    displacement = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
         // Displace along sin curve
@@ -175,63 +175,51 @@ void main()
         if(dist <= pow(radii[i], 2.f))
         {
             
-            float domeDist = 1.f - dist / radii[i];
-            float t = clamp(0.f, 1.f, dist / radii[i]);
+            float domeDist = dist / radii[i];
+            float t = clamp(0.f, PI / 2., dist / radii[i]);
             
-            displacement += abs(sin(t * PI / 3.0));
-
-         //    pos -= (displacement * vs_Nor * .1);*/
-           //  fs_Col = pos;
-        
-       /* float t2 = clamp(0.f, 1.f, dist / radii[i]);
-        float t = clamp(0.f, 1.f, 1.f - dist / radii[i]);
-        float theta = dist; 
-        float phi = dist;
-   
-        dx += .3 * (1.f-dist) * cos(theta)*sin(phi) * vs_Nor.x;
-        dy += .05 * (1.f-dist) * sin(theta)*sin(phi) * vs_Nor.y;
-        dz += .05 * (1.f-dist) * cos(phi) * vs_Nor.z;
-        pos.x -= dx;
-        pos.y -= dy;
-        pos.z -= dz;*/
-        
+            displacement += (sin(t));  
+            centerCol = vec3(dist, dist, dist);              
         } 
         float r2 = pow(radii[i], 2.f);
 
         if(dist > r2 && dist < r2 + .03)
         {
             float t = clamp(0.f, 1.f, dist / radii[i]);
-           // displacement += pow(2.0, t) / 10.f ;
-            //fs_Col = displacement *  vec4(0.5f,.5f,.5f,1.f);
             pos += ((pow(2.0, t) / 10.f) * vs_Nor * .1);
+            centerCol = vec3(dist, dist,dist);
         }
+        
     }
 
 
-        float noise = cos(sin(displacement));//fbm(vec2(radii[i], dist));
-        float noise2 = cos(noise);fbm(vec2(noise, noise));
+        float noise = cos(sin(displacement));
+        float noise2 = cos(noise);
 
          if(fract(noise * noise2) < 1.f )
-        {
-            //float t = clamp(0.f, 1.f, dist / radii[i]);
-          ///  displacement += pow(2.0, displacement) / 10.f ;
-            //fs_Col = displacement *  vec4(0.5f,.5f,.5f,1.f);
+        {        
           pos += ((pow(2.0, displacement) / 10.f) * vs_Nor * .1);
         }
 
-      ///  pos.x -= dx;
-       // pos.y -= dy;
-       // pos.z -= dz;
         pos -= (displacement * vs_Nor * .1);
-        
-        float offsetX = fbm(vec2(vs_Nor.x, pos.x));
-        float offsetY = fbm(vec2(vs_Nor.y, pos.y));
-        float offsetZ = fbm(vec2(vs_Nor.z, pos.z));
-        vec4 offset = vec4(offsetX, offsetY, offsetZ, 0.f);
+        //pos -= (centerCol.x * vs_Nor *.2);
+
+        float deltaPos = 3. * distance(vs_Pos, pos);
+        // was the point moved outward or inward
+        float posOrNeg = distance(pos, sphereCenter) - distance(vs_Pos, sphereCenter);
+        vec3 col;
+        if(posOrNeg >= 0.f)
+        {
+            col = vec3(.5, .5, .5) + vec3(deltaPos) + centerCol;
+
+        } else {
+            col = vec3(.5, .5, .5) - vec3(deltaPos) + centerCol;
+        }
+        fs_Col = vec4(col, 1.0);
     
 
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = vec4(invTranspose * vec3(vs_Nor * offset), 0);          // Pass the vertex normals to the fragment shader for interpolation.
+    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
                                                             // Transform the geometry's normals by the inverse transpose of the
                                                             // model matrix. This is necessary to ensure the normals remain
                                                             // perpendicular to the surface after the surface is transformed by
@@ -239,8 +227,10 @@ void main()
 
 
     vec4 modelposition = u_Model * pos;   // Temporarily store the transformed vertex positions for use below
+    vec4 lightPosition = u_Model * (u_Light);
+    
 
-    fs_LightVec = u_Eye - modelposition;  // Compute the direction in which the light source lies
+    fs_LightVec = u_Light  - modelposition;  // Compute the direction in which the light source lies
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices

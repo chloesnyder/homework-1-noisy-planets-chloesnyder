@@ -81,21 +81,7 @@ float fbm (vec2 st) {
 
 void main()
 {
-        vec3 b = vec3(0.6, 0.6, 0.7);
-        vec3 c = vec3(0.2, 0.2, 0.2);
-        vec3 d = vec3(8.f, 8.f, 9.f);
-        vec3 a = vec3(0.f, 0.0f, 0.f);
-
-     /*   //if(displacement > 0.f) {
-           // vec2 st = gl_FragCoord.xy / cross(gl_FragCoord.xy, fs_UV);
-            st.x *= displacement;
-            vec4 diffuseColor = fs_Col;//vec4(palette(displacement, a, b, c, d),1.f);
-            float noise = fbm(st*2.0f + displacement);
-            diffuseColor += vec4(noise, noise, noise, 0.f);*/
-        
-       // vec4 diffuseColor = vec4(.5,.5,.5,1.f);//vec4(.5, .5, .5, 1.f) - abs(vec4(dx+dy+dz, dy+dx+dz, dz+dy+dx, 0.0)) + vec4(displacement, displacement, displacement,1.f);
-
-        vec4 diffuseColor = normalize(vec4(.5,.5,.5,1.f) - vec4(vec3(displacement/2.5f),0.f));
+        vec4 diffuseColor = fs_Col;//normalize(vec4(.5,.5,.5,1.f) - vec4(vec3(displacement/2.5f),0.f));
 
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));

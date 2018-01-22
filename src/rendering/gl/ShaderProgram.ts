@@ -33,6 +33,7 @@ class ShaderProgram {
   
   unifEye: WebGLUniformLocation;
   unifTime: WebGLUniformLocation;
+  unifLight: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -57,6 +58,7 @@ class ShaderProgram {
     
     this.unifTime = gl.getUniformLocation(this.prog, "u_Time");
     this.unifEye = gl.getUniformLocation(this.prog, "u_Eye");
+    this.unifLight = gl.getUniformLocation(this.prog, "u_Light");
   }
 
   use() {
@@ -106,6 +108,13 @@ class ShaderProgram {
     if(this.unifEye !== -1){
       gl.uniform4fv(this.unifEye, eye);
     }   
+  }
+
+  setLight(light: vec4) {
+    this.use();
+    if(this.unifLight !== -1){
+      gl.uniform4fv(this.unifLight, light);
+    }  
   }
 
   draw(d: Drawable) {
