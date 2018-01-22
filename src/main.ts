@@ -17,7 +17,7 @@ let cube: Cube;
 let time = 0;
 let currShader: ShaderProgram;
 let currGeometry: Drawable;
-let numTesselations = 6;
+let numTesselations = 7;
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
