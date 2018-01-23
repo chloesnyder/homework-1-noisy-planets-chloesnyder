@@ -89,6 +89,20 @@ float noise(vec3 x)
     return mix(mix(mix( hash(n + dot(step, vec3(0., 0., 0.))), hash(n + dot(step, vec3(1., 0., 0.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 0.))), hash(n + dot(step, vec3(1., 1., 0.))), u.x), u.y), mix(mix( hash(n + dot(step, vec3(0., 0., 1.))), hash(n + dot(step, vec3(1., 0., 1.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 1.))), hash(n + dot(step, vec3(1., 1., 1.))), u.x), u.y), u.z); 
 }
 
+// modified from here: https://shaderfrog.com/app/editor
+float fbm(vec2 p) {
+    float z = 2.;
+    float rz = 0.;
+    vec2 bp = p;
+    float octaves = 9.0;
+    for (float i = 1.; i < octaves; i++) {
+        rz += abs((noise(p) - 0.5) * 2.0) / z;
+        z = z * 2.;
+        p = p * 2.;
+    }
+    return rz;
+}
+
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
@@ -130,9 +144,9 @@ vec3 greenPalette(float t)
 vec3 bluePalette(float t)
 {
     vec3 a = vec3(0.0, 0.0, 1.0);
-    vec3 b = vec3(0.0, 0.0, 1.0);
-    vec3 c = vec3(0.0, 0.0, 1.0);
-    vec3 d = vec3(0.0, 0.0, 1.0);
+    vec3 b = vec3(0.0, 0.2, .50);
+    vec3 c = vec3(0.0, 0.0, .30);
+    vec3 d = vec3(0.0, 0.0, .20);
     return a + b*cos( 6.28318*(c*t+d));
 }
 
@@ -245,8 +259,8 @@ float biomes(vec3 c)
     if(all(lessThan(abs(c) - blue, vec3(epsilon))))
     {
         isWater = 1.0;
-        fs_Col = vec4(.3, 0., 0., 1.) * vec4(worleyNoise(vs_Pos.xyz, 5.0),1.0);
-        //fs_Col = vec4(bluePalette(t),1.0);
+        t = fbm(vs_Pos.yz);
+        fs_Col = vec4(bluePalette(t),1.0);
         return t;
     } else if (all(lessThan(abs(c) - red, vec3(epsilon)))) 
     {
