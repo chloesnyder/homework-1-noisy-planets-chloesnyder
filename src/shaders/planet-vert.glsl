@@ -103,6 +103,21 @@ float fbm(vec2 p) {
     return rz;
 }
 
+// reference from https://www.shadertoy.com/view/lt3XDM
+float fbm2(vec3 x, int octaves) 
+{ 
+    float v = 0.0; 
+    float a = 0.5; 
+    vec3 shift = vec3(100.0); 
+    for (int i = 0; i < octaves; ++i) 
+    { 
+        v += a * noise(x); 
+        x = x * 2.0 + shift; 
+        a *= 0.5; 
+    } 
+    return v;
+}
+
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
@@ -127,10 +142,16 @@ vec3 random3D (vec3 st) {
     return(vec3(x,y,z));
 }
 
-vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d )
+vec3 deserPalette(float t)
 {
+    //https://www.rapidtables.com/web/color/RGB_Color.html
+    vec3 a = vec3(184.0 / 255.0, 134.0 / 255.0, 11.0 / 255.0); // dark golden rod
+    vec3 b = vec3(218.0 / 255.0, 165.0 / 255.0, 32.0 / 255.0); // golden rod
+    vec3 c = vec3(0.4, .50, 0.0);
+    vec3 d = vec3(.3, .15, 0.20);
     return a + b*cos( 6.28318*(c*t+d));
 }
+
 
 vec3 greenPalette(float t)
 {
@@ -256,16 +277,27 @@ float biomes(vec3 c)
 
     float t = 1.0;
 
+    // OCEAN -> BLUE BIOME
     if(all(lessThan(abs(c) - blue, vec3(epsilon))))
     {
         isWater = 1.0;
         t = fbm(vs_Pos.yz);
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
-    } else if (all(lessThan(abs(c) - red, vec3(epsilon)))) 
+    } 
+    // FOREST -> RED BIOME
+    else if (all(lessThan(abs(c) - red, vec3(epsilon)))) 
     {
         t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.f);
         fs_Col = vec4(greenPalette(t),1.0);
+        return t;
+        
+    } 
+    else if (all(lessThan(abs(c) - orange, vec3(epsilon)))) 
+    {
+        t =  2.f * noise(vs_Pos.y) * fbm2(vs_Pos.xyz, 20);//5.f * hash(vs_Pos.z * vs_Pos.x) / noise(vs_Nor.xyz);
+       // t += hash(vs_Pos.z * vs_Pos.z) * noise(vs_Pos.xyz) + noise(72.f);
+        fs_Col = vec4(deserPalette(t),1.0);
         return t;
         
     } else {
