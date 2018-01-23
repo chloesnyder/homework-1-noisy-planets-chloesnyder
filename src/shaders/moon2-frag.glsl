@@ -44,6 +44,46 @@ vec3 random3D (vec3 st) {
     return(vec3(x,y,z));
 }
 
+
+float surflet(vec3 P, vec3 gridPoint)
+{
+    // Compute falloff function by converting linear distance to a polynomial
+    float distX = abs(P.x - gridPoint.x);
+    float distY = abs(P.y - gridPoint.y);
+    float distZ = abs(P.z - gridPoint.z);
+    float tX = 1. - 6. * pow(distX, 5.0) + 15. * pow(distX, 4.0) - 10. * pow(distX, 3.0);
+    float tY = 1. - 6. * pow(distY, 5.0) + 15. * pow(distY, 4.0) - 10. * pow(distY, 3.0);
+    float tZ = 1. - 6. * pow(distZ, 5.0) + 15. * pow(distZ, 4.0) - 10. * pow(distZ, 3.0);
+
+    // Get the random vector for the grid point
+    vec3 gradient = random3D(gridPoint);
+    // Get the vector from the grid point to P
+    vec3 diff = P - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * tX * tY;
+}
+
+float PerlinNoise(vec3 a)
+{
+    // Tile the space
+    vec3 uvXLYLZL = floor(a);
+   
+    vec3 uvXHYHZH = uvXLYLZL + vec3(1.0,1.0,1.0);
+    vec3 uvXHYHZL = uvXLYLZL + vec3(1.0,1.0,0.0);
+    vec3 uvXHYLZL = uvXLYLZL + vec3(1.0,0.0,0.0);
+    vec3 uvXHYLZH = uvXLYLZL + vec3(1.0,0.0,1.0);
+
+    vec3 uvXLYLZH = uvXLYLZL + vec3(0.0,0.0,1.0);   
+    vec3 uvXLYHZH = uvXLYLZL + vec3(0.0,1.0,1.0);
+    vec3 uvXLYHZL = uvXLYLZL + vec3(0.0,1.0,0.0);
+
+
+    return surflet(a, uvXLYLZL) + surflet(a, uvXHYHZH) + surflet(a, uvXHYHZL) + surflet(a, uvXHYLZL) +
+     surflet(a, uvXHYLZH) + surflet(a, uvXLYLZH) + surflet(a, uvXLYHZH) + surflet(a, uvXLYHZL);
+}
+
 void main()
 {
         vec4 diffuseColor = fs_Col;
@@ -59,7 +99,7 @@ void main()
                                                             //to simulate ambient lighting. This ensures that faces that are not
                                                             //lit by our point light are not completely black.
 
-    float scalar = 5.;
+    float scalar = 2.;
     float summedNoise = 0.0;
     float amplitude = 0.5; 
     vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
@@ -74,12 +114,16 @@ void main()
                 vec3 worleyPoint = random3D(gridCellCorner);
                 float dist = distance(worleyPoint + gridCellCorner, gridSpacePoint);
                 minDist = min(minDist, dist);
-                summedNoise += minDist * amplitude;
-                amplitude *= .5;
+               // summedNoise += minDist * amplitude;
+               // amplitude *= .5;
+
+                float perlin = abs(PerlinNoise(fs_Pos.xyz));
+                summedNoise += perlin * amplitude;
+                amplitude *= 0.5;
             }
         }
     }
-    vec3 color = .5 * vec3(minDist);
+    vec3 color = .5 * vec3(summedNoise + .5f *minDist);
                                                      
 
         // Compute final shaded color
