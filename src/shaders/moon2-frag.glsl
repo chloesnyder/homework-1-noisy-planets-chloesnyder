@@ -99,7 +99,7 @@ void main()
                                                             //to simulate ambient lighting. This ensures that faces that are not
                                                             //lit by our point light are not completely black.
 
-    float scalar = 2.;
+    /*float scalar = 2.;
     float summedNoise = 0.0;
     float amplitude = 0.5; 
     vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
@@ -123,7 +123,8 @@ void main()
             }
         }
     }
-    vec3 color = .5 * vec3(summedNoise + .5f *minDist);
+    vec3 color = .5 * vec3(summedNoise + .5f *minDist);*/
+    vec3 color;
                                                      
 
         // Compute final shaded color

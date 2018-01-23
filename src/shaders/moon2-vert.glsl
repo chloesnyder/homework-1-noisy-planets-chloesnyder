@@ -142,7 +142,7 @@ void main()
         } 
         float r2 = pow(radii[i], 2.f);
 
-        if(dist > r2 && dist < r2 + .03)
+        if(dist > r2 && dist < r2 + .02)
         {
             float t = clamp(0.f, 1.f, dist / radii[i]);
             pos += ((pow(2.0, t) / 10.f) * vs_Nor * .1);
@@ -163,7 +163,7 @@ void main()
         pos -= (displacement * vs_Nor * .1);
         //pos -= (centerCol.x * vs_Nor *.2);
 
-        float deltaPos = 3. * distance(vs_Pos, pos);
+        float deltaPos = 5. * distance(vs_Pos, pos);
         // was the point moved outward or inward
         float posOrNeg = distance(pos, sphereCenter) - distance(vs_Pos, sphereCenter);
         vec3 col;
