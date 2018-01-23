@@ -36,6 +36,8 @@ out vec4 fs_Pos;
 
 const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
+float minDist;
+
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
     vec4 d = normalize(sphereSurfacePt - sphereCenterPt);
@@ -44,39 +46,6 @@ vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
     float theta = acos(d.y);
 
     return vec2(1.f - phi / PI, 1.f - theta / PI);
-}
-
-vec2 random2( vec2 p ) {
-    return normalize(2.0 * fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453) - 1.0);
-}
-
-float surflet(vec2 P, vec2 gridPoint)
-{
-    // Compute falloff function by converting linear distance to a polynomial
-    float distX = abs(P.x - gridPoint.x);
-    float distY = abs(P.y - gridPoint.y);
-    float tX = 1.f - 6.f * pow(distX, 5.0) + 15.f * pow(distX, 4.0) - 10.f * pow(distX, 3.0);
-    float tY = 1.f - 6.f * pow(distY, 5.0) + 15.f * pow(distY, 4.0) - 10.f * pow(distY, 3.0);
-
-    // Get the random vector for the grid point
-    vec2 gradient = random2(gridPoint);
-    // Get the vector from the grid point to P
-    vec2 diff = P - gridPoint;
-    // Get the value of our height field by dotting grid->P with our gradient
-    float height = dot(diff, gradient);
-    // Scale our height field (i.e. reduce it) by our polynomial falloff function
-    return height * tX * tY;
-}
-
-float PerlinNoise(vec2 uv)
-{
-    // Tile the space
-    vec2 uvXLYL = floor(uv);
-    vec2 uvXHYL = uvXLYL + vec2(1,0);
-    vec2 uvXHYH = uvXLYL + vec2(1,1);
-    vec2 uvXLYH = uvXLYL + vec2(0,1);
-
-    return surflet(uv, uvXLYL) + surflet(uv, uvXHYL) + surflet(uv, uvXHYH) + surflet(uv, uvXLYH);
 }
 
 vec3 random3D (vec3 st) {
@@ -96,54 +65,26 @@ vec3 random3DTest(vec3 st) {
     return vec3(fract(sin(dot(st, vec3(12.9898, 78.233, 56.176)) * 43758.5453)));
 }
 
-vec2 PixelToGrid(vec2 pixel, float size)
-{
-    vec2 u_Dimensions = vec2(30.0,30.0);
-    vec2 uv = pixel.xy / u_Dimensions.xy;
-    // Account for aspect ratio
-    uv.x = uv.x * float(u_Dimensions.x) / float(u_Dimensions.y);
-    // Determine number of cells (NxN)
-    uv *= size;
-
-    return uv;
-}
-
-vec3 summedPerlinNoise()
-{
-    vec3 color;
-    float summedNoise = 0.0;
-    float amplitude = 0.5;
-    for(int i = 2; i <= 32; i *= 2) {
-        vec2 uv = PixelToGrid(convertToUV(vs_Pos, sphereCenter), float(i));
-        uv = vec2(cos(3.14159/3.0 * float(i)) * uv.x - sin(3.14159/3.0 * float(i)) * uv.y, sin(3.14159/3.0 * float(i)) * uv.x + cos(3.14159/3.0 * float(i)) * uv.y);
-        float perlin = abs(PerlinNoise(uv));// * amplitude;
-        summedNoise += perlin * amplitude;
-        amplitude *= 0.5;
-    }
-    color = vec3(summedNoise);//vec3((summedNoise + 1) * 0.5);
-    return color;
-}
-
 vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d )
 {
     return a + b*cos( 6.28318*(c*t+d));
 }
 
-int to1D (int i, int j, int k, int iMax, int jMax, int kMax)
+int to1D (int x, int y, int z, int height, int width, int depth)
 {
-    return (k * iMax * jMax) + (j * iMax) + i;
+    return x + y * width + z * width * depth;
 }
 
 // output a nearest grid cell index
 //assume worley outputs color of "zone"
 // Thank you to Adam and Charles for helping me develop this function
-vec3 worleyNoise()
+vec3 worleyNoise(vec3 p)
 {
     vec3 color = vec3(.0);
 
     float scalar = sqrt(3.0);
-    vec3 gridSpacePoint = vs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
-    float minDist = 10.0;
+    vec3 gridSpacePoint = p * scalar; // Scalar can be 1 for now for testing
+    minDist = 10.0;
     int i0;
     int j0;
     int k0;
@@ -166,8 +107,8 @@ vec3 worleyNoise()
             }
         }
     }
-    vec3 final_coord = floor(gridSpacePoint) + vec3(float(i0), float(j0), float(k0));
-    final_coord = (final_coord + vec3(2.0)) / 4.0;
+    vec3 coord = floor(gridSpacePoint) + vec3(float(i0), float(j0), float(k0));
+    coord = (coord + vec3(2.0)) / 4.0;
    
     int idx = to1D(i0, j0, k0, 1, 1, 1);
     vec3 a = vec3(0.5, 0.5, 0.5);
@@ -175,35 +116,70 @@ vec3 worleyNoise()
     vec3 c = vec3(1.0, 1.0, 0.5);
     vec3 d = vec3(0.80, 0.90, 0.30);
     vec3 col = palette(float(idx), a, b, c, d);
-    return final_coord * (1.0 - minDist);
-   // return col;
+
+    return coord;
+}
+
+vec3 biomes(vec3 coord)
+{
+   
+    if(coord.x < .3 && coord.x > .15)
+    {
+        if(coord.y < .3 && coord.y > .15)
+        {
+             // red biome
+            return vec3(1.0,0.0,0.0);
+        } else if (coord.y > .3) {
+            // yellow biome
+            return vec3(1.0,1.0,0.0);
+        }  else {
+            // pink biome
+            return vec3(1.0,0.0,1.0);
+        }     
+    } else if(coord.x < .15 && coord.x > -.2) {
+        if(coord.z < .5 && coord.z > -.2)
+        {
+            //cyan biome
+            return vec3(0.0,1.0,1.0);
+        }
+        //blue biome
+        return vec3(0.0,0.0,1.0);
+    } else {
+        if(coord.y < .3 && coord.y > .15)
+        {
+             // orange biome
+            return vec3(1.0,0.50,0.0);
+        } else if (coord.y > .12 ) {
+            if(coord.z > .4)
+            {
+                // puke color?
+                return vec3(.5,.5,.0); 
+            }
+            // white biome
+            return vec3(1.0,1.0,1.0);
+        } else if (coord.y < .78) {
+            //gray biome
+             return vec3(.5,.5,.5);
+        }  else if (coord.z < 0.){
+            // pink biome
+            return vec3(1.0,0.0,1.0);
+        }  else {
+            // black biome
+            return vec3(0.0);
+        }
+    }
 }
 
 void main()
 {
-    vec4 worleyColor = vec4(worleyNoise(), 1.);
-    vec4 color =  worleyColor;                         // Pass the vertex colors to the fragment shader for interpolation
+    vec3 pos = vs_Pos.xyz;
+    vec3 worley = worleyNoise(pos);
+    vec4 worleyColor = vec4(worley * (1.0 - minDist), 1.);
+    vec3 c = biomes(worley);
+    vec4 color =  vec4(c, 1.0);                         // Pass the vertex colors to the fragment shader for interpolation
 
-  /*  if(vs_Pos.y > .7f)
-    {
-        color += vec4(.5, .5, .5, 0.);
-    }
-*/
-    //  if(color.x + color.y + color.z > .0 && color.x + color.y + color.z < 1.5)
-    //  {
-    //      color = worleyColor *  vec4(1.,.1,1.0,1.0);
-    //  }
-
-   
-     fs_Col = color;
-    vec4 pos;
-   /* if(color.x + color.y + color.z > .2f)
-    {
-        pos = vs_Pos + .1 * (color * vs_Nor);
-    } else {
-        pos = vs_Pos;
-    }*/
-    fs_Pos = vs_Pos;
+    fs_Pos = vec4(pos,1.0);
+    fs_Col = color;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
