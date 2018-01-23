@@ -124,15 +124,29 @@ vec3 summedPerlinNoise()
     return color;
 }
 
+vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
+int to1D (int i, int j, int k, int iMax, int jMax, int kMax)
+{
+    return (k * iMax * jMax) + (j * iMax) + i;
+}
+
 // output a nearest grid cell index
 //assume worley outputs color of "zone"
+// Thank you to Adam and Charles for helping me develop this function
 vec3 worleyNoise()
 {
     vec3 color = vec3(.0);
 
-    float scalar = 1.0;//sqrt(3.0);
+    float scalar = sqrt(3.0);
     vec3 gridSpacePoint = vs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
     float minDist = 10.0;
+    int i0;
+    int j0;
+    int k0;
     for(int i = -1; i <= 1; ++i)
     {
         for(int j = -1; j <= 1; ++j)
@@ -143,10 +157,26 @@ vec3 worleyNoise()
                 vec3 worleyPoint = random3D(gridCellCorner);
                 float dist = distance(worleyPoint + gridCellCorner, gridSpacePoint);
                 minDist = min(minDist, dist);
+                //storing what the cell that is closest to this vertex is and return that instead of returning the minimum distance itself
+                if(minDist == dist) {
+                    i0 = i;
+                    j0 = j;
+                    k0 = k;
+                }
             }
         }
     }
-    return vec3(minDist);
+    vec3 final_coord = floor(gridSpacePoint) + vec3(float(i0), float(j0), float(k0));
+    final_coord = (final_coord + vec3(2.0)) / 4.0;
+   
+    int idx = to1D(i0, j0, k0, 1, 1, 1);
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 0.5);
+    vec3 d = vec3(0.80, 0.90, 0.30);
+    vec3 col = palette(float(idx), a, b, c, d);
+    return final_coord * (1.0 - minDist);
+   // return col;
 }
 
 void main()
@@ -154,6 +184,11 @@ void main()
     vec4 worleyColor = vec4(worleyNoise(), 1.);
     vec4 color =  worleyColor;                         // Pass the vertex colors to the fragment shader for interpolation
 
+  /*  if(vs_Pos.y > .7f)
+    {
+        color += vec4(.5, .5, .5, 0.);
+    }
+*/
     //  if(color.x + color.y + color.z > .0 && color.x + color.y + color.z < 1.5)
     //  {
     //      color = worleyColor *  vec4(1.,.1,1.0,1.0);
