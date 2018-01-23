@@ -21,6 +21,8 @@ uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformati
                             // We've written a static matrix for you to use for HW2,
                             // but in HW3 you'll have to generate one yourself
 
+uniform vec4 u_Light;
+
 in vec4 vs_Pos;             // The array of vertex positions passed to the shader
 
 in vec4 vs_Nor;             // The array of vertex normals passed to the shader
@@ -32,8 +34,7 @@ out vec4 fs_LightVec;       // The direction in which our virtual light lies, re
 out vec4 fs_Col;            // The color of each vertex. This is implicitly passed to the fragment shader.
 out vec4 fs_Pos;
 
-const vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of
-                                        //the geometry in the fragment shader.
+const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
@@ -43,6 +44,39 @@ vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
     float theta = acos(d.y);
 
     return vec2(1.f - phi / PI, 1.f - theta / PI);
+}
+
+vec2 random2( vec2 p ) {
+    return normalize(2.0 * fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453) - 1.0);
+}
+
+float surflet(vec2 P, vec2 gridPoint)
+{
+    // Compute falloff function by converting linear distance to a polynomial
+    float distX = abs(P.x - gridPoint.x);
+    float distY = abs(P.y - gridPoint.y);
+    float tX = 1.f - 6.f * pow(distX, 5.0) + 15.f * pow(distX, 4.0) - 10.f * pow(distX, 3.0);
+    float tY = 1.f - 6.f * pow(distY, 5.0) + 15.f * pow(distY, 4.0) - 10.f * pow(distY, 3.0);
+
+    // Get the random vector for the grid point
+    vec2 gradient = random2(gridPoint);
+    // Get the vector from the grid point to P
+    vec2 diff = P - gridPoint;
+    // Get the value of our height field by dotting grid->P with our gradient
+    float height = dot(diff, gradient);
+    // Scale our height field (i.e. reduce it) by our polynomial falloff function
+    return height * tX * tY;
+}
+
+float PerlinNoise(vec2 uv)
+{
+    // Tile the space
+    vec2 uvXLYL = floor(uv);
+    vec2 uvXHYL = uvXLYL + vec2(1,0);
+    vec2 uvXHYH = uvXLYL + vec2(1,1);
+    vec2 uvXLYH = uvXLYL + vec2(0,1);
+
+    return surflet(uv, uvXLYL) + surflet(uv, uvXHYL) + surflet(uv, uvXHYH) + surflet(uv, uvXLYH);
 }
 
 vec3 random3D (vec3 st) {
@@ -62,11 +96,41 @@ vec3 random3DTest(vec3 st) {
     return vec3(fract(sin(dot(st, vec3(12.9898, 78.233, 56.176)) * 43758.5453)));
 }
 
+vec2 PixelToGrid(vec2 pixel, float size)
+{
+    vec2 u_Dimensions = vec2(30.0,30.0);
+    vec2 uv = pixel.xy / u_Dimensions.xy;
+    // Account for aspect ratio
+    uv.x = uv.x * float(u_Dimensions.x) / float(u_Dimensions.y);
+    // Determine number of cells (NxN)
+    uv *= size;
+
+    return uv;
+}
+
+vec3 summedPerlinNoise()
+{
+    vec3 color;
+    float summedNoise = 0.0;
+    float amplitude = 0.5;
+    for(int i = 2; i <= 32; i *= 2) {
+        vec2 uv = PixelToGrid(convertToUV(vs_Pos, sphereCenter), float(i));
+        uv = vec2(cos(3.14159/3.0 * float(i)) * uv.x - sin(3.14159/3.0 * float(i)) * uv.y, sin(3.14159/3.0 * float(i)) * uv.x + cos(3.14159/3.0 * float(i)) * uv.y);
+        float perlin = abs(PerlinNoise(uv));// * amplitude;
+        summedNoise += perlin * amplitude;
+        amplitude *= 0.5;
+    }
+    color = vec3(summedNoise);//vec3((summedNoise + 1) * 0.5);
+    return color;
+}
+
+// output a nearest grid cell index
+//assume worley outputs color of "zone"
 vec3 worleyNoise()
 {
-        vec3 color = vec3(.0);
+    vec3 color = vec3(.0);
 
-    float scalar = sqrt(3.0);
+    float scalar = 1.0;//sqrt(3.0);
     vec3 gridSpacePoint = vs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
     float minDist = 10.0;
     for(int i = -1; i <= 1; ++i)
@@ -87,9 +151,23 @@ vec3 worleyNoise()
 
 void main()
 {
-    vec4 color = vec4(worleyNoise(), 1.);                         // Pass the vertex colors to the fragment shader for interpolation
+    vec4 worleyColor = vec4(worleyNoise(), 1.);
+    vec4 color =  worleyColor;                         // Pass the vertex colors to the fragment shader for interpolation
 
-    fs_Col = color;
+    //  if(color.x + color.y + color.z > .0 && color.x + color.y + color.z < 1.5)
+    //  {
+    //      color = worleyColor *  vec4(1.,.1,1.0,1.0);
+    //  }
+
+   
+     fs_Col = color;
+    vec4 pos;
+   /* if(color.x + color.y + color.z > .2f)
+    {
+        pos = vs_Pos + .1 * (color * vs_Nor);
+    } else {
+        pos = vs_Pos;
+    }*/
     fs_Pos = vs_Pos;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
@@ -102,7 +180,7 @@ void main()
 
     vec4 modelposition = u_Model * fs_Pos;   // Temporarily store the transformed vertex positions for use below
 
-    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
+    fs_LightVec = u_Light - modelposition;  // Compute the direction in which the light source lies
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices
