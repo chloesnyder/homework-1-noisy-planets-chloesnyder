@@ -54,66 +54,6 @@ vec3 random3DTest(vec3 st) {
 }
 
 void main() {
-    vec2 st = convertToUV(fs_Pos, sphereCenter);
- 
-
-    vec3 color = vec3(.0);
-
-  /*  // Cell positions
-    vec3 point[30];
-    point[0] = .5 * vec3(1.0, 1.0, 1.0);
-    point[1] = .5 * vec3(-1.0, 1.0, 1.0);
-    point[2] = .5 * vec3(1.0, -1.0, 1.0);
-    point[3] = .5 * vec3(1.0, 1.0, -1.0);
-    point[4] = .5 * vec3(-1.0, -1.0, 1.0);
-    point[5] = .5 * vec3(1.0, -1.0, -1.0);
-    point[6] = .5 * vec3(-1.0, -1.0, -1.0);
-
-    //now add some random points
-
-   for(int i = 0; i < 30; i++)
-    {
-        point[i] = (random(vec3(float(i) / 30.f, 30.f - float(i) / 30.f, float(i*i)/30.f)));
-    }
-
-
-    float m_dist = 1.;  // minimun distance
-
-    // 3D 
-    // Iterate through the points positions
-    for (int i = 0; i < 30; i++) {
-       // vec3 spherePt = squareToSphere(point[i]);
-        float dist = distance(vec3(fs_Pos),point[i]);
-
-        // Keep the closer distance
-        m_dist = min(m_dist, dist);
-    }
-
-    // Draw the min distance (distance field)
-    color += vec3(1.) - vec3(m_dist);
-
-    // Show isolines
-    // color -= step(.7,abs(sin(50.0*m_dist)))*.3;
-
-    out_Col = vec4(color,1.0);*/
-
-
-    float scalar = sqrt(3.0);
-    vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
-    float minDist = 10.0;
-    for(int i = -1; i <= 1; ++i)
-    {
-        for(int j = -1; j <= 1; ++j)
-        {
-            for(int k = -1; k <= 1; ++k)
-            {
-                vec3 gridCellCorner = floor(gridSpacePoint) + vec3(float(i), float(j), float(k));
-                vec3 worleyPoint = random3D(gridCellCorner);
-                float dist = distance(worleyPoint + gridCellCorner, gridSpacePoint);
-                minDist = min(minDist, dist);
-            }
-        }
-    }
-    color = vec3(minDist);
-    out_Col = vec4(color,1.0);
+    
+    out_Col = fs_Col;
 }

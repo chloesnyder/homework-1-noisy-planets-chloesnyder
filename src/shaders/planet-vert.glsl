@@ -67,7 +67,7 @@ vec3 worleyNoise()
         vec3 color = vec3(.0);
 
     float scalar = sqrt(3.0);
-    vec3 gridSpacePoint = fs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
+    vec3 gridSpacePoint = vs_Pos.xyz * scalar; // Scalar can be 1 for now for testing
     float minDist = 10.0;
     for(int i = -1; i <= 1; ++i)
     {
@@ -87,7 +87,10 @@ vec3 worleyNoise()
 
 void main()
 {
-    fs_Col = vec4(worleyNoise(), 1.);                         // Pass the vertex colors to the fragment shader for interpolation
+    vec4 color = vec4(worleyNoise(), 1.);                         // Pass the vertex colors to the fragment shader for interpolation
+
+    fs_Col = color;
+    fs_Pos = vs_Pos;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
@@ -96,9 +99,8 @@ void main()
                                                             // perpendicular to the surface after the surface is transformed by
                                                             // the model matrix.
 
-    fs_Pos = vs_Pos;
 
-    vec4 modelposition = u_Model * vs_Pos;   // Temporarily store the transformed vertex positions for use below
+    vec4 modelposition = u_Model * fs_Pos;   // Temporarily store the transformed vertex positions for use below
 
     fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
 
