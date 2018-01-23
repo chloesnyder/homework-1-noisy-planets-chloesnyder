@@ -8,6 +8,15 @@
 //geometry with millions of vertices.
 
 #define PI 3.1415926535897932384626433832795
+#define RED vec3(1.0, 0.0, 0.0);
+#define YELLOW vec3(1.0,1.0,0.0);
+#define PINK vec3(1.0,0.0,1.0);
+#define CYAN vec3(0.0,1.0,1.0);
+#define BLUE vec3(0.0,0.0,1.0);
+#define ORANGE vec3(1.0,0.50,0.0);
+#define OLIVE vec3(.5,.5,.0);
+#define WHITE vec3(1.0,1.0,1.0);
+#define GRAY vec3(.5,.5,.5);
 
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering. In this assignment,
@@ -22,6 +31,7 @@ uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformati
                             // but in HW3 you'll have to generate one yourself
 
 uniform vec4 u_Light;
+uniform vec4 u_Eye;
 
 in vec4 vs_Pos;             // The array of vertex positions passed to the shader
 
@@ -34,9 +44,51 @@ out vec4 fs_LightVec;       // The direction in which our virtual light lies, re
 out vec4 fs_Col;            // The color of each vertex. This is implicitly passed to the fragment shader.
 out vec4 fs_Pos;
 
+out float isWater;
+
 const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 float minDist;
+
+// The following are from https://www.shadertoy.com/view/4dS3Wd
+float hash(float n) 
+{ 
+    return fract(sin(n) * 1e4); 
+}
+
+float hash(vec2 p) 
+{ 
+    return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); 
+}
+float noise(float x) 
+{ 
+    float i = floor(x); 
+    float f = fract(x); 
+    float u = f * f * (3.0 - 2.0 * f); 
+    return mix(hash(i), hash(i + 1.0), u); 
+}
+float noise(vec2 x) 
+{ 
+    vec2 i = floor(x); 
+    vec2 f = fract(x); 
+    float a = hash(i); 
+    float b = hash(i + vec2(1.0, 0.0)); 
+    float c = hash(i + vec2(0.0, 1.0)); 
+    float d = hash(i + vec2(1.0, 1.0)); 
+    vec2 u = f * f * (3.0 - 2.0 * f); 
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y; 
+}
+
+float noise(vec3 x) 
+{ 
+    const vec3 step = vec3(110., 241., 171.); 
+    vec3 i = floor(x); 
+    vec3 f = fract(x); 
+    float n = dot(i, step); 
+    vec3 u = f * f * (3.0 - 2.0 * f); 
+    return mix(mix(mix( hash(n + dot(step, vec3(0., 0., 0.))), hash(n + dot(step, vec3(1., 0., 0.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 0.))), hash(n + dot(step, vec3(1., 1., 0.))), u.x), u.y), mix(mix( hash(n + dot(step, vec3(0., 0., 1.))), hash(n + dot(step, vec3(1., 0., 1.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 1.))), hash(n + dot(step, vec3(1., 1., 1.))), u.x), u.y), u.z); 
+}
+
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
@@ -61,12 +113,26 @@ vec3 random3D (vec3 st) {
     return(vec3(x,y,z));
 }
 
-vec3 random3DTest(vec3 st) {
-    return vec3(fract(sin(dot(st, vec3(12.9898, 78.233, 56.176)) * 43758.5453)));
-}
-
 vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d )
 {
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
+vec3 greenPalette(float t)
+{
+    vec3 a = vec3(0.0, .5, 0.1);
+    vec3 b = vec3(0.0, .50, 0.0);
+    vec3 c = vec3(0.4, .50, 0.0);
+    vec3 d = vec3(0.0, .15, 0.20);
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
+vec3 bluePalette(float t)
+{
+    vec3 a = vec3(0.0, 0.0, 1.0);
+    vec3 b = vec3(0.0, 0.0, 1.0);
+    vec3 c = vec3(0.0, 0.0, 1.0);
+    vec3 d = vec3(0.0, 0.0, 1.0);
     return a + b*cos( 6.28318*(c*t+d));
 }
 
@@ -78,11 +144,10 @@ int to1D (int x, int y, int z, int height, int width, int depth)
 // output a nearest grid cell index
 //assume worley outputs color of "zone"
 // Thank you to Adam and Charles for helping me develop this function
-vec3 worleyNoise(vec3 p)
+vec3 worleyNoise(vec3 p, float scalar)
 {
     vec3 color = vec3(.0);
 
-    float scalar = sqrt(3.0);
     vec3 gridSpacePoint = p * scalar; // Scalar can be 1 for now for testing
     minDist = 10.0;
     int i0;
@@ -109,60 +174,52 @@ vec3 worleyNoise(vec3 p)
     }
     vec3 coord = floor(gridSpacePoint) + vec3(float(i0), float(j0), float(k0));
     coord = (coord + vec3(2.0)) / 4.0;
-   
-    int idx = to1D(i0, j0, k0, 1, 1, 1);
-    vec3 a = vec3(0.5, 0.5, 0.5);
-    vec3 b = vec3(0.5, 0.5, 0.5);
-    vec3 c = vec3(1.0, 1.0, 0.5);
-    vec3 d = vec3(0.80, 0.90, 0.30);
-    vec3 col = palette(float(idx), a, b, c, d);
-
     return coord;
 }
 
-vec3 biomes(vec3 coord)
-{
-   
+// Break up worley noise into a voronoi type diagram
+vec3 colorize(vec3 coord)
+{  
     if(coord.x < .3 && coord.x > .15)
     {
         if(coord.y < .3 && coord.y > .15)
         {
              // red biome
-            return vec3(1.0,0.0,0.0);
+            return RED;
         } else if (coord.y > .3) {
             // yellow biome
-            return vec3(1.0,1.0,0.0);
+            return YELLOW;
         }  else {
             // pink biome
-            return vec3(1.0,0.0,1.0);
+            return PINK;
         }     
     } else if(coord.x < .15 && coord.x > -.2) {
         if(coord.z < .5 && coord.z > -.2)
         {
             //cyan biome
-            return vec3(0.0,1.0,1.0);
+            return CYAN;
         }
         //blue biome
-        return vec3(0.0,0.0,1.0);
+        return BLUE;
     } else {
         if(coord.y < .3 && coord.y > .15)
         {
              // orange biome
-            return vec3(1.0,0.50,0.0);
+            return ORANGE;
         } else if (coord.y > .12 ) {
             if(coord.z > .4)
             {
                 // puke color?
-                return vec3(.5,.5,.0); 
+                return OLIVE; 
             }
             // white biome
-            return vec3(1.0,1.0,1.0);
+            return WHITE;
         } else if (coord.y < .78) {
             //gray biome
-             return vec3(.5,.5,.5);
+             return GRAY;
         }  else if (coord.z < 0.){
             // pink biome
-            return vec3(1.0,0.0,1.0);
+            return PINK;
         }  else {
             // black biome
             return vec3(0.0);
@@ -170,19 +227,54 @@ vec3 biomes(vec3 coord)
     }
 }
 
+// use input color to determine what biome this vertex lies on
+// calculate noise function
+float biomes(vec3 c)
+{
+    float epsilon = .0001;
+    vec3 olive = OLIVE;
+    vec3 blue = BLUE;
+    vec3 red = RED;
+    vec3 pink = PINK;
+    vec3 yellow = YELLOW;
+    vec3 orange = ORANGE;
+    vec3 gray = GRAY;
+
+    float t = 1.0;
+
+    if(all(lessThan(abs(c) - blue, vec3(epsilon))))
+    {
+        isWater = 1.0;
+        fs_Col = vec4(.3, 0., 0., 1.) * vec4(worleyNoise(vs_Pos.xyz, 5.0),1.0);
+        //fs_Col = vec4(bluePalette(t),1.0);
+        return t;
+    } else if (all(lessThan(abs(c) - red, vec3(epsilon)))) 
+    {
+        t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.f);
+        fs_Col = vec4(greenPalette(t),1.0);
+        return t;
+        
+    } else {
+        fs_Col = vec4(c,1.0);;
+        return 1.0f;
+    }
+}
+
 void main()
 {
+    float scalar = sqrt(3.0);
     vec3 pos = vs_Pos.xyz;
-    vec3 worley = worleyNoise(pos);
+    vec3 worley = worleyNoise(pos, scalar);
     vec4 worleyColor = vec4(worley * (1.0 - minDist), 1.);
-    vec3 c = biomes(worley);
+    vec3 c = colorize(worley);
+    float displacement = biomes(c);
     vec4 color =  vec4(c, 1.0);                         // Pass the vertex colors to the fragment shader for interpolation
 
-    fs_Pos = vec4(pos,1.0);
-    fs_Col = color;
+    fs_Pos = vs_Nor * displacement * .1 + vec4(pos,1.0);
+    //fs_Col = color;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
-    fs_Nor = vec4(invTranspose * vec3(vs_Nor), 0);          // Pass the vertex normals to the fragment shader for interpolation.
+    fs_Nor = vec4(normalize(invTranspose * vec3(vs_Nor)), 0);          // Pass the vertex normals to the fragment shader for interpolation.
                                                             // Transform the geometry's normals by the inverse transpose of the
                                                             // model matrix. This is necessary to ensure the normals remain
                                                             // perpendicular to the surface after the surface is transformed by
@@ -191,7 +283,7 @@ void main()
 
     vec4 modelposition = u_Model * fs_Pos;   // Temporarily store the transformed vertex positions for use below
 
-    fs_LightVec = u_Light - modelposition;  // Compute the direction in which the light source lies
+    fs_LightVec = normalize(u_Light - modelposition);  // Compute the direction in which the light source lies
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices

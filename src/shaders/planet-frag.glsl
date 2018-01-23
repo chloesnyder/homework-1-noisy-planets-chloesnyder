@@ -19,11 +19,15 @@ in vec4 fs_Nor;
 in vec4 fs_LightVec;
 in vec4 fs_Col;
 in vec4 fs_Pos;
+
+uniform vec4 u_Eye;
+
 #define PI 3.1415926535897932384626433832795
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
 
+in float isWater;
 const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
@@ -55,5 +59,28 @@ vec3 random3DTest(vec3 st) {
 
 void main() {
     
-    out_Col = fs_Col;
+   vec4 diffuseColor = fs_Col;
+
+     // Calculate the diffuse term for Lambert shading
+    float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
+    // Avoid negative lighting values
+    diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);
+
+    float ambientTerm = 0.2;
+    float shininess = 10.0;
+    float attenuation = .4f;
+    float s = 0.0;
+    vec4 viewDirection = normalize(u_Eye - fs_Pos);
+
+    if(dot(fs_Nor, fs_LightVec) > 0. && (abs(isWater - 1.0) < 0.01) )
+    {
+          
+        s = attenuation * pow(max(0.0, dot(reflect(-fs_LightVec, fs_Nor), viewDirection)),
+	      shininess);
+    }
+
+    float lightIntensity = diffuseTerm + ambientTerm + s;   //Add a small float value to the color multiplier
+                                                            //to simulate ambient lighting. This ensures that faces that are not
+                                                            //lit by our point light are not completely black.
+    out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);
 }
