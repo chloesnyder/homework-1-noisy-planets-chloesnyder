@@ -12,6 +12,7 @@ import {fromValues} from 'node_modules/gl-matrix/src/gl-matrix/mat4';
 import Drawable from './rendering/gl/Drawable';
 
 let icosphere: Icosphere;
+let icosphere2: Icosphere;
 let square: Square;
 let cube: Cube;
 let time = 0;
@@ -30,12 +31,15 @@ const controls = {
   light_x: 40,
   light_y: 20,
   light_z: 20,
+  tectonic_plates: Math.sqrt(3.0),
 };
 
 
 function loadScene() {
   icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
   icosphere.create();
+  icosphere2 = new Icosphere(vec3.fromValues(2, 1, 1), 1, controls.tesselations);
+  icosphere2.create();
   square = new Square(vec3.fromValues(0, 0, 0));
   square.create();
   cube = new Cube(vec3.fromValues(0, 0, 0));
@@ -63,6 +67,7 @@ function main() {
   gui.add(controls, 'light_x', -200, 200).step(1);
   gui.add(controls, 'light_y', -200, 200).step(1);
   gui.add(controls, 'light_z', -200, 200).step(1);
+  gui.add(controls, 'tectonic_plates', 1, 10).step(.01);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -168,6 +173,7 @@ if(controls.geometry == 'cube')
     var eye = vec4.fromValues(camera.controls.eye[0], camera.controls.eye[1], camera.controls.eye[2], 1);
     var vec4color = vec4.fromValues(controls.color[0] / 255, controls.color[1] / 255, controls.color[2] / 255, 1);
     var light = vec4.fromValues(controls.light_x, controls.light_y, controls.light_z, 1);
+    var tectonic_plates = controls.tectonic_plates;
     changeShader();
     changeGeometry();
 
@@ -175,9 +181,14 @@ if(controls.geometry == 'cube')
        currGeometry
     ], vec4color, time, eye);*/
 
-    renderer.render(camera, planetShader, [
-      icosphere
-   ], vec4color, time, eye, light);
+  //   renderer.render(camera, planetShader, [
+  //     icosphere
+  //  ], vec4color, time, eye, light, tectonic_plates);
+
+
+   renderer.render(camera, moonShader, [
+    icosphere
+ ], vec4color, time, eye, light, tectonic_plates);
 
     stats.end();
     time++;

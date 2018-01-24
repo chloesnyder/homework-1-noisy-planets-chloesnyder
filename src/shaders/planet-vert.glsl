@@ -34,6 +34,7 @@ uniform mat4 u_ViewProj;    // The matrix that defines the camera's transformati
 
 uniform vec4 u_Light;
 uniform vec4 u_Eye;
+uniform float u_Plates;
 
 in vec4 vs_Pos;             // The array of vertex positions passed to the shader
 
@@ -47,6 +48,8 @@ out vec4 fs_Col;            // The color of each vertex. This is implicitly pass
 out vec4 fs_Pos;
 
 out float isWater;
+
+
 
 const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
@@ -71,20 +74,6 @@ float noise(float x)
     float f = fract(x); 
     float u = f * f * (3.0 - 2.0 * f); 
     return mix(hash(i), hash(i + 1.0), u); 
-}
-
-
-float hash2(float n) 
-{ 
-    return fract(cos(n) * sin(n) + 13.0); 
-}
-
-float noise2(float x) 
-{ 
-    float i = floor(x); 
-    float f = fract(x); 
-    float u = f * f * (7.0 - 30.0 * f); 
-    return mix(hash2(i), hash2(i + 1.0), u); 
 }
 
 //  https://www.shadertoy.com/view/4dS3Wd
@@ -169,21 +158,6 @@ float fbm(vec2 p) {
     return rz;
 }
 
-// reference from https://www.shadertoy.com/view/lt3XDM
-float fbm2(vec3 x, int octaves) 
-{ 
-    float v = 0.0; 
-    float a = 0.5; 
-    vec3 shift = vec3(100.0); 
-    for (int i = 0; i < octaves; ++i) 
-    { 
-        v += a * noise(x); 
-        x = x * 2.0 + shift; 
-        a *= 0.5; 
-    } 
-    return v;
-}
-
 // thanks Dan for the help! Remapping / explaining to me 3d value noise
 float mountainFbm(vec3 x, int octaves) 
 { 
@@ -215,17 +189,6 @@ float mountainFbm(vec3 x, int octaves)
     return 3.0 * f3;
 }
 
-
-vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
-{
-    vec4 d = normalize(sphereSurfacePt - sphereCenterPt);
-    float phi = atan(d.z, d.x);
-    if(phi < 0.f) phi += PI * 2.f;
-    float theta = acos(d.y);
-
-    return vec2(1.f - phi / PI, 1.f - theta / PI);
-}
-
 vec3 random3D (vec3 st) {
     float x = fract(sin(dot(st.xyz,
                          vec3(12.9898,78.233,78.233)))*
@@ -239,24 +202,17 @@ vec3 random3D (vec3 st) {
     return(vec3(x,y,z));
 }
 
-vec3 deserPalette(float t)
-{
-    //https://www.rapidtables.com/web/color/RGB_Color.html
-    vec3 a = vec3(184.0 / 255.0, 134.0 / 255.0, 11.0 / 255.0); // dark golden rod
-    vec3 b = vec3(218.0 / 255.0, 165.0 / 255.0, 32.0 / 255.0); // golden rod
-    vec3 c = vec3(0.4, .50, 0.0);
-    vec3 d = vec3(.3, .15, 0.20);
-    return a + b*cos( 6.28318*(c*t+d));
-}
-
 vec3 winterPalette(float t)
 {
     //https://www.rapidtables.com/web/color/RGB_Color.html
+    t /= 3.0;
+    t = smoothstep(0.0, 1.0, t);
+    t *= 3.0;
     vec3 a = vec3(1.0, 1.0, 1.0); 
     vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
     vec3 c = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(225.0 / 204.0, 224.0 / 255.0, 229.0 / 255.0);
     vec3 d = a;
-    return a + b*cos((c*t+d));
+    return sqrt(a + b*cos((c*t+d)));
 }
 
 
@@ -424,7 +380,7 @@ float biomes(vec3 c)
     || all(lessThan(abs(c) - white, vec3(epsilon)))) 
     {
         t = mountainFbm(vs_Pos.xyz, 6);
-        fs_Col = vec4(winterPalette(t),1.0);
+        fs_Col = vec4(winterPalette(3.0 - t),1.0);
         return t;
         
     } else {
@@ -435,7 +391,7 @@ float biomes(vec3 c)
 
 void main()
 {
-    float scalar = sqrt(3.0);
+    float scalar = u_Plates;
     vec3 pos = vs_Pos.xyz;
     vec3 worley = worleyNoise(pos, scalar);
     vec4 worleyColor = vec4(worley * (1.0 - minDist), 1.);

@@ -98,7 +98,7 @@ void main()
 
     fs_UV = uv;
 
-    const int numCircles = 100;
+    const int numCircles = 50;
     vec3 samples[numCircles];
     float radii[numCircles];
     vec2 phiThetaPair[numCircles];
@@ -161,7 +161,7 @@ void main()
         }
 
         pos -= (displacement * vs_Nor * .1);
-        //pos -= (centerCol.x * vs_Nor *.2);
+        
 
         float deltaPos = 5. * distance(vs_Pos, pos);
         // was the point moved outward or inward
