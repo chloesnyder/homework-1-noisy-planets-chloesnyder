@@ -68,7 +68,7 @@ void main() {
 
     float ambientTerm = 0.2;
     float shininess = 10.0;
-    float attenuation = .4f;
+    float attenuation = 3.f;
     float s = 0.0;
     vec4 viewDirection = normalize(u_Eye - fs_Pos);
 

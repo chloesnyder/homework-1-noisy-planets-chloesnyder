@@ -277,8 +277,8 @@ float biomes(vec3 c)
 
     float t = 1.0;
 
-    // OCEAN -> BLUE BIOME
-    if(all(lessThan(abs(c) - blue, vec3(epsilon))))
+    // OCEAN -> BLUE BIOME, GRAY BIOME
+    if(all(lessThan(abs(c) - blue, vec3(epsilon))) || all(lessThan(abs(c) - gray, vec3(epsilon))))
     {
         isWater = 1.0;
         t = fbm(vs_Pos.yz);
@@ -295,8 +295,8 @@ float biomes(vec3 c)
     } 
     else if (all(lessThan(abs(c) - orange, vec3(epsilon)))) 
     {
-        t =  2.f * noise(vs_Pos.y) * fbm2(vs_Pos.xyz, 20);//5.f * hash(vs_Pos.z * vs_Pos.x) / noise(vs_Nor.xyz);
-       // t += hash(vs_Pos.z * vs_Pos.z) * noise(vs_Pos.xyz) + noise(72.f);
+        t =  fbm2(vs_Pos.xyz, 5);//5.f * hash(vs_Pos.z * vs_Pos.x) / noise(vs_Nor.xyz);
+        t += noise(72.f);
         fs_Col = vec4(deserPalette(t),1.0);
         return t;
         
