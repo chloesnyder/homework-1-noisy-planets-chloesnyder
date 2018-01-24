@@ -18,6 +18,8 @@
 #define WHITE vec3(1.0,1.0,1.0);
 #define GRAY vec3(.5,.5,.5);
 
+uniform float u_Time;
+
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering. In this assignment,
                             // this will be the result of traversing your scene graph.
@@ -166,8 +168,8 @@ vec3 bluePalette(float t)
 {
     vec3 a = vec3(0.0, 0.0, 1.0);
     vec3 b = vec3(0.0, 0.2, .50);
-    vec3 c = vec3(0.0, 0.0, .30);
-    vec3 d = vec3(0.0, 0.0, .20);
+    vec3 c = vec3(0.0, 3.0, .30);
+    vec3 d = vec3(1.0, 0.0, .20);
     return a + b*cos( 6.28318*(c*t+d));
 }
 
@@ -262,6 +264,17 @@ vec3 colorize(vec3 coord)
     }
 }
 
+float lin_interp(float a, float b, float t)
+{
+   return a * (1.f - t) + b * t;
+}
+
+float cos_interp(float a, float b, float t)
+{
+    float cos_t = (1.f - cos(t * PI)) * .5f;
+    return lin_interp(a,b,cos_t);
+}
+
 // use input color to determine what biome this vertex lies on
 // calculate noise function
 float biomes(vec3 c)
@@ -277,10 +290,13 @@ float biomes(vec3 c)
 
     float t = 1.0;
 
+    // TODO: spikey mountain range zone! lots of zig zaggy noise, frequency low amptlitude high? multi octaved?
+
     // OCEAN -> BLUE BIOME, GRAY BIOME
     if(all(lessThan(abs(c) - blue, vec3(epsilon))) || all(lessThan(abs(c) - gray, vec3(epsilon))))
     {
         isWater = 1.0;
+        float time = 40.0 + pow(u_Time, .5);
         t = fbm(vs_Pos.yz);
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
