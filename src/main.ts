@@ -27,6 +27,9 @@ const controls = {
   color: [128, 128, 128, 1],
   shader: 'lambert',
   geometry: 'cube',
+  light_x: 40,
+  light_y: 20,
+  light_z: 20,
 };
 
 
@@ -57,6 +60,9 @@ function main() {
   gui.add(controls, 'Load Scene');
   gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon', 'moon2', 'planet']);
   gui.add(controls, 'geometry',['cube', 'icosphere', 'square'] );
+  gui.add(controls, 'light_x', -200, 200).step(1);
+  gui.add(controls, 'light_y', -200, 200).step(1);
+  gui.add(controls, 'light_z', -200, 200).step(1);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -161,7 +167,7 @@ if(controls.geometry == 'cube')
     renderer.clear();
     var eye = vec4.fromValues(camera.controls.eye[0], camera.controls.eye[1], camera.controls.eye[2], 1);
     var vec4color = vec4.fromValues(controls.color[0] / 255, controls.color[1] / 255, controls.color[2] / 255, 1);
-    var light = vec4.fromValues(-40, 20, 20, 1);
+    var light = vec4.fromValues(controls.light_x, controls.light_y, controls.light_z, 1);
     changeShader();
     changeGeometry();
 
