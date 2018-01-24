@@ -253,10 +253,10 @@ vec3 winterPalette(float t)
 {
     //https://www.rapidtables.com/web/color/RGB_Color.html
     vec3 a = vec3(1.0, 1.0, 1.0); 
-    vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
-    vec3 c = vec3(225.0 / 204.0, 224.0 / 255.0, 229.0 / 255.0);
-    vec3 d = vec3(204.0 / 255.0, 229.0 / 255.0, 225.0 / 255.0);
-    return a + b*cos( 6.28318*(c*t+d));
+    vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
+    vec3 c = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(225.0 / 204.0, 224.0 / 255.0, 229.0 / 255.0);
+    vec3 d = a;
+    return a + b*cos((c*t+d));
 }
 
 
@@ -393,13 +393,14 @@ float biomes(vec3 c)
     vec3 yellow = YELLOW;
     vec3 orange = ORANGE;
     vec3 gray = GRAY;
+    vec3 cyan = CYAN;
+    vec3 white = WHITE;
 
     float t = 1.0;
 
-    // TODO: spikey mountain range zone! lots of zig zaggy noise, frequency low amptlitude high? multi octaved?
-
-    // OCEAN -> BLUE BIOME, GRAY BIOME
-    if(all(lessThan(abs(c) - blue, vec3(epsilon))) || all(lessThan(abs(c) - gray, vec3(epsilon))))
+    // OCEANS -> BLUE BIOME, GRAY BIOME
+    if(all(lessThan(abs(c) - blue, vec3(epsilon))) 
+    || all(lessThan(abs(c) - gray, vec3(epsilon))))
     {
         isWater = 1.0;
         float time = 40.0 + pow(u_Time, .5);
@@ -408,29 +409,21 @@ float biomes(vec3 c)
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
     } 
-    // FOREST -> RED BIOME
-    else if (all(lessThan(abs(c) - red, vec3(epsilon)))) 
+    // FORESTS - > red
+    else if (all(lessThan(abs(c) - yellow, vec3(epsilon)))) 
     {
         t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.f);
         fs_Col = vec4(greenPalette(t),1.0);
+        t *= (1.0 - minDist);
         return t;
         
     } 
-    // ORANGE BIOME -> ?
-    else if (all(lessThan(abs(c) - orange, vec3(epsilon)))) 
+    //  MOUNTAINS
+    else if (all(lessThan(abs(c) - cyan, vec3(epsilon)))
+    || all(lessThan(abs(c) - pink, vec3(epsilon)))
+    || all(lessThan(abs(c) - white, vec3(epsilon)))) 
     {
-        t =  fbm2(vs_Pos.xyz, 5);//5.f * hash(vs_Pos.z * vs_Pos.x) / noise(vs_Nor.xyz);
-        t += noise(72.f) + (1.0 - minDist);
-        fs_Col = vec4(deserPalette(t),1.0);
-        return t;
-        
-    } 
-    // YELOW BIOME -> MOUNTAINS
-    else if (all(lessThan(abs(c) - yellow, vec3(epsilon)))) 
-    {
-        t = mountainFbm(vs_Pos.xyz, 6);//cos_interp(a, b, .2);
-        //float b =  3.0 * (1.0 - minDist);
-       // t = lin_interp(a, b, .3);
+        t = mountainFbm(vs_Pos.xyz, 6);
         fs_Col = vec4(winterPalette(t),1.0);
         return t;
         
