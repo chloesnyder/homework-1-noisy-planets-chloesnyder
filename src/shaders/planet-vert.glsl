@@ -52,16 +52,19 @@ const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 float minDist;
 
-// The following are from https://www.shadertoy.com/view/4dS3Wd
+//  https://www.shadertoy.com/view/4dS3Wd
 float hash(float n) 
 { 
     return fract(sin(n) * 1e4); 
 }
 
+//  https://www.shadertoy.com/view/4dS3Wd
 float hash(vec2 p) 
 { 
     return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); 
 }
+
+//  https://www.shadertoy.com/view/4dS3Wd
 float noise(float x) 
 { 
     float i = floor(x); 
@@ -69,6 +72,22 @@ float noise(float x)
     float u = f * f * (3.0 - 2.0 * f); 
     return mix(hash(i), hash(i + 1.0), u); 
 }
+
+
+float hash2(float n) 
+{ 
+    return fract(cos(n) * sin(n) + 13.0); 
+}
+
+float noise2(float x) 
+{ 
+    float i = floor(x); 
+    float f = fract(x); 
+    float u = f * f * (7.0 - 30.0 * f); 
+    return mix(hash2(i), hash2(i + 1.0), u); 
+}
+
+//  https://www.shadertoy.com/view/4dS3Wd
 float noise(vec2 x) 
 { 
     vec2 i = floor(x); 
@@ -81,6 +100,7 @@ float noise(vec2 x)
     return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y; 
 }
 
+//  https://www.shadertoy.com/view/4dS3Wd
 float noise(vec3 x) 
 { 
     const vec3 step = vec3(110., 241., 171.); 
@@ -89,6 +109,50 @@ float noise(vec3 x)
     float n = dot(i, step); 
     vec3 u = f * f * (3.0 - 2.0 * f); 
     return mix(mix(mix( hash(n + dot(step, vec3(0., 0., 0.))), hash(n + dot(step, vec3(1., 0., 0.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 0.))), hash(n + dot(step, vec3(1., 1., 0.))), u.x), u.y), mix(mix( hash(n + dot(step, vec3(0., 0., 1.))), hash(n + dot(step, vec3(1., 0., 1.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 1.))), hash(n + dot(step, vec3(1., 1., 1.))), u.x), u.y), u.z); 
+}
+
+float noise3DtoFloat(vec3 x)
+{
+    return fract(sin(dot(x, vec3(24.282432, 62.2313, 47.291))) * 53472.3274);
+}
+
+// http://www.iquilezles.org/www/articles/morenoise/morenoise.htm
+float mountainNoise(vec3 v) 
+{ 
+    vec3 nXnYnZ = floor(v); // grid corner
+    vec3 i = fract(v);
+
+    // generate other grid corners
+    vec3 pXpYpZ = nXnYnZ + vec3(1.0, 1.0, 1.0);
+    vec3 pXpYnZ = nXnYnZ + vec3(1.0, 1.0, 0.0);
+    vec3 pXnYnZ = nXnYnZ + vec3(1.0, 0.0, 0.0);
+    vec3 pXnYpZ = nXnYnZ + vec3(1.0, 0.0, 1.0);
+    vec3 nXpYpZ = nXnYnZ + vec3(0.0, 1.0, 1.0);
+    vec3 nXnYpZ = nXnYnZ + vec3(0.0, 0.0, 1.0);
+    vec3 nXpYnZ = nXnYnZ + vec3(0.0, 1.0, 0.0);
+
+    // feed these grid corners into a noise function that takes a vec3 and returns a float
+    float ppp = noise3DtoFloat(pXpYpZ);
+    float ppn = noise3DtoFloat(pXpYnZ);
+    float pnn = noise3DtoFloat(pXnYnZ);
+    float pnp = noise3DtoFloat(pXnYpZ);
+    float npp = noise3DtoFloat(nXpYpZ);
+    float nnp = noise3DtoFloat(nXnYpZ);
+    float npn = noise3DtoFloat(nXpYnZ);
+    float nnn = noise3DtoFloat(nXnYnZ);
+
+    // interpolate 3D  to 2D
+    float nn = nnn * (1.0 - i.x) + pnn * i.x;
+    float np = nnp * (1.0 - i.x) + pnp * i.x;
+    float pn = npn * (1.0 - i.x) + ppn * i.x;
+    float pp = npp * (1.0 - i.x) + ppp * i.x;
+
+    //interpolate 2D to 1 D
+    float n = nn * (1.0 - i.y) + pn * i.y;
+    float p = np * (1.0 - i.y) + pp * i.y;
+
+    return n * (1.0 - i.z) + p * i.z;
+
 }
 
 // modified from here: https://shaderfrog.com/app/editor
@@ -118,6 +182,37 @@ float fbm2(vec3 x, int octaves)
         a *= 0.5; 
     } 
     return v;
+}
+
+// thanks Dan for the help! Remapping / explaining to me 3d value noise
+float mountainFbm(vec3 x, int octaves) 
+{ 
+    float total = 0.0;
+    float persistence =  1.0 / 1.5f;
+    float amplitude = .5;
+    float maxPossible = 0.0;
+    float frequency = 5.0;
+
+    for(int i = 0; i < octaves; ++i)
+    {
+        //float freq = pow(1.5, float(i));
+       // float amp = pow(persistence, float(i));
+        total += amplitude * mountainNoise(x * frequency); // 3D value noise function
+        maxPossible += amplitude;
+        amplitude *= persistence;
+        frequency *= 2.0;
+    }
+    //total /= maxPossible;
+    //total = (0.5 * total) + 0.5;
+
+    // remap so that there is randomness within the worley noise
+    // f1 = distance of this vert from closest worley nosie point. Keeps the continent edges from jagging up too much
+    // f2 = noise
+    float f1 = 1.0 - minDist;
+    float f2 = 1.0 - (total / maxPossible); // normalize result of fb (maybe need to do 1 - total / maxPosssible)
+    float f3 = max(0.0, (f1 - f2) / (1.0 - f2));
+    f3 = mix(f3, 1.0 - f2, 0.5);
+    return 3.0 * f3;
 }
 
 
@@ -153,6 +248,17 @@ vec3 deserPalette(float t)
     vec3 d = vec3(.3, .15, 0.20);
     return a + b*cos( 6.28318*(c*t+d));
 }
+
+vec3 winterPalette(float t)
+{
+    //https://www.rapidtables.com/web/color/RGB_Color.html
+    vec3 a = vec3(1.0, 1.0, 1.0); 
+    vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
+    vec3 c = vec3(225.0 / 204.0, 224.0 / 255.0, 229.0 / 255.0);
+    vec3 d = vec3(204.0 / 255.0, 229.0 / 255.0, 225.0 / 255.0);
+    return a + b*cos( 6.28318*(c*t+d));
+}
+
 
 
 vec3 greenPalette(float t)
@@ -297,6 +403,7 @@ float biomes(vec3 c)
     {
         isWater = 1.0;
         float time = 40.0 + pow(u_Time, .5);
+        //TODO: animate ocean?
         t = fbm(vs_Pos.yz);
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
@@ -309,11 +416,22 @@ float biomes(vec3 c)
         return t;
         
     } 
+    // ORANGE BIOME -> ?
     else if (all(lessThan(abs(c) - orange, vec3(epsilon)))) 
     {
         t =  fbm2(vs_Pos.xyz, 5);//5.f * hash(vs_Pos.z * vs_Pos.x) / noise(vs_Nor.xyz);
-        t += noise(72.f);
+        t += noise(72.f) + (1.0 - minDist);
         fs_Col = vec4(deserPalette(t),1.0);
+        return t;
+        
+    } 
+    // YELOW BIOME -> MOUNTAINS
+    else if (all(lessThan(abs(c) - yellow, vec3(epsilon)))) 
+    {
+        t = mountainFbm(vs_Pos.xyz, 6);//cos_interp(a, b, .2);
+        //float b =  3.0 * (1.0 - minDist);
+       // t = lin_interp(a, b, .3);
+        fs_Col = vec4(winterPalette(t),1.0);
         return t;
         
     } else {
