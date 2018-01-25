@@ -19,6 +19,7 @@ let time = 0;
 let currShader: ShaderProgram;
 let currGeometry: Drawable;
 let numTesselations = 7;
+let prevSpeed = 1;
 
 let moonTransform: mat4;
 
@@ -34,7 +35,8 @@ const controls = {
   light_y: 20,
   light_z: 20,
   tectonic_plates: Math.sqrt(3.0),
-  rotationSpeed: 50
+  rotationSpeed: 50,
+  animate: true,
 };
 
 
@@ -73,6 +75,7 @@ function main() {
   gui.add(controls, 'light_z', -200, 200).step(1);
   gui.add(controls, 'tectonic_plates', 1, 10).step(.01);
   gui.add(controls, 'rotationSpeed', 1, 100).step(1);
+  gui.add(controls, 'animate');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -92,6 +95,8 @@ function main() {
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
   gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   const lambert = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/lambert-vert.glsl')),
@@ -127,6 +132,12 @@ function main() {
   const planetShader = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/planet-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/planet-frag.glsl')),
+  ])
+
+
+  const cloudShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/cloud-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/cloud-frag.glsl')),
   ])
 
 
@@ -186,9 +197,18 @@ if(controls.geometry == 'cube')
 // update the translation vector by rotating it around the earth
 // update the rotation by rotating it around its own y axis
 
+var rotSpeed;
+if(controls.animate)
+{
+  rotSpeed = time / controls.rotationSpeed;
+  prevSpeed = rotSpeed;
+} else {
+  rotSpeed = prevSpeed;
+}
+
   var moonOut = mat4.create();
-  var moonRot = quat.rotateY(quat.create(), quat.create(), time / (.5 * controls.rotationSpeed));
-  var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), time / controls.rotationSpeed);//vec3.fromValues(3,1,0);
+  var moonRot = quat.rotateY(quat.create(), quat.create(), 2 * rotSpeed);
+  var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), rotSpeed);
   var moonScale = vec3.fromValues(.25, .25, .25);
   var moonOrigin = vec3.fromValues(0, 0, 0);
   var moonModel = mat4.fromRotationTranslationScaleOrigin(moonOut, moonRot, moonPos, moonScale, moonOrigin);
@@ -198,7 +218,7 @@ if(controls.geometry == 'cube')
  ], vec4color, time, eye, light, tectonic_plates, moonModel);
 
  var planetOut = mat4.create();
- var planetRot = quat.rotateY(quat.create(), quat.create(), time / controls.rotationSpeed);
+ var planetRot = quat.rotateY(quat.create(), quat.create(), rotSpeed);
  var planetPos = vec3.fromValues(0,0,0);
  var planetScale = vec3.fromValues(1, 1, 1);
  var planetOrigin = vec3.fromValues(0, 0, 0);
@@ -208,6 +228,17 @@ if(controls.geometry == 'cube')
  renderer.render(camera, planetShader, [
   icosphere
 ], vec4color, time, eye, light, tectonic_plates, planetModel);
+
+ var cloudsOut = mat4.create();
+ var cloudsRot = quat.rotateZ(quat.create(), quat.create(), rotSpeed);
+ var cloudsPos = vec3.fromValues(0,0,0);
+ var cloudsScale = vec3.fromValues(1.1, 1.1, 1.1);
+ var cloudsOrigin = vec3.fromValues(0, 0, 0);
+ var cloudsModel = mat4.fromRotationTranslationScaleOrigin(cloudsOut, cloudsRot, cloudsPos, cloudsScale, cloudsOrigin);
+
+renderer.render(camera, cloudShader, [
+  icosphere
+], vec4color, time, eye, light, tectonic_plates, cloudsModel)
 
     stats.end();
     time++;

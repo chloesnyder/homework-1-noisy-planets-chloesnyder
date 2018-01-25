@@ -176,9 +176,7 @@ float mountainFbm(vec3 x, int octaves)
         amplitude *= persistence;
         frequency *= 2.0;
     }
-    //total /= maxPossible;
-    //total = (0.5 * total) + 0.5;
-
+    
     // remap so that there is randomness within the worley noise
     // f1 = distance of this vert from closest worley nosie point. Keeps the continent edges from jagging up too much
     // f2 = noise
