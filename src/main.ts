@@ -208,9 +208,24 @@ if(controls.animate)
   rotSpeed = prevSpeed;
 }
 
+
+var planetOut = mat4.create();
+var planetRot = quat.rotateY(quat.create(), quat.create(), rotSpeed);
+var planetPos = vec3.fromValues(0,0,0);
+var planetScale = vec3.fromValues(1, 1, 1);
+var planetOrigin = vec3.fromValues(0, 0, 0);
+var planetModel = mat4.fromRotationTranslationScaleOrigin(planetOut, planetRot, planetPos, planetScale, planetOrigin);
+
+
+renderer.render(camera, planetShader, [
+ icosphere
+], vec4color, time, eye, light, tectonic_plates, planetModel);
+
   var moonOut = mat4.create();
   var moonRot = quat.rotateY(quat.create(), quat.create(), 2 * rotSpeed);
-  var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), rotSpeed);
+  // if rotSpeed = rate that planet goes in the day, and it takes 27 days for the moon to orbit the earth,
+  // then the moon rotates at 1/27th rotation's speed
+  var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), rotSpeed / 27);
   var moonScale = vec3.fromValues(.25, .25, .25);
   var moonOrigin = vec3.fromValues(0, 0, 0);
   var moonModel = mat4.fromRotationTranslationScaleOrigin(moonOut, moonRot, moonPos, moonScale, moonOrigin);
@@ -219,17 +234,6 @@ if(controls.animate)
     icosphere
  ], vec4color, time, eye, light, tectonic_plates, moonModel);
 
- var planetOut = mat4.create();
- var planetRot = quat.rotateY(quat.create(), quat.create(), rotSpeed);
- var planetPos = vec3.fromValues(0,0,0);
- var planetScale = vec3.fromValues(1, 1, 1);
- var planetOrigin = vec3.fromValues(0, 0, 0);
- var planetModel = mat4.fromRotationTranslationScaleOrigin(planetOut, planetRot, planetPos, planetScale, planetOrigin);
-
-
- renderer.render(camera, planetShader, [
-  icosphere
-], vec4color, time, eye, light, tectonic_plates, planetModel);
 
 
 if(controls.clouds)

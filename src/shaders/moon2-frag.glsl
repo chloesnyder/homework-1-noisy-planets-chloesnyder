@@ -16,6 +16,7 @@ precision highp float;
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
 uniform float u_Time;
 uniform vec4 u_Eye;
+uniform vec4 u_ShadowSource;
 
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
@@ -32,6 +33,7 @@ out vec4 out_Col; // This is the final output color that you will see on your
 
 void main()
 {
+
         vec4 diffuseColor = fs_Col;
 
         // Calculate the diffuse term for Lambert shading

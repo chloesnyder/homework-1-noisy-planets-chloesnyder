@@ -37,6 +37,8 @@ class ShaderProgram {
   unifPlates: WebGLUniformLocation;
   unifCenter: WebGLUniformLocation;
 
+  unifShadowSource : WebGLUniformLocation;
+
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
 
@@ -62,6 +64,7 @@ class ShaderProgram {
     this.unifEye = gl.getUniformLocation(this.prog, "u_Eye");
     this.unifLight = gl.getUniformLocation(this.prog, "u_Light");
     this.unifPlates = gl.getUniformLocation(this.prog, "u_Plates");
+    this.unifShadowSource = gl.getUniformLocation(this.prog, "u_ShadowSource");
   }
 
   use() {
@@ -125,6 +128,13 @@ setPlates(plate: number) {
   if(this.unifPlates !== -1){
     gl.uniform1f(this.unifPlates, plate);
   }  
+}
+
+setShadowSource(shadow: vec4) {
+  this.use();
+    if(this.unifShadowSource !== -1){
+      gl.uniform4fv(this.unifShadowSource, shadow);
+    }  
 }
 
 

@@ -239,7 +239,7 @@ int to1D (int x, int y, int z, int height, int width, int depth)
 }
 
 // output a nearest grid cell index
-//assume worley outputs color of "zone"
+// assume worley outputs color of "zone"
 // Thank you to Adam and Charles for helping me develop this function
 vec3 worleyNoise(vec3 p, float scalar)
 {
@@ -352,7 +352,7 @@ float biomes(vec3 c)
 
     float t = 1.0;
 
-    // OCEANS -> BLUE BIOME, GRAY BIOME
+    // OCEANS 
     if(all(lessThan(abs(c) - blue, vec3(epsilon))) 
     || all(lessThan(abs(c) - gray, vec3(epsilon))))
     {
@@ -363,7 +363,7 @@ float biomes(vec3 c)
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
     } 
-    // FORESTS - > red
+    // FORESTS
     else if (all(lessThan(abs(c) - yellow, vec3(epsilon)))) 
     {
         t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.f);

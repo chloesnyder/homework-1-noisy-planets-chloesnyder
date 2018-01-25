@@ -37,6 +37,7 @@ class OpenGLRenderer {
     prog.setEye(eye);
     prog.setLight(light);
     prog.setPlates(tectonic_plates);
+    prog.setShadowSource(vec4.fromValues(3,1,0,1));
 
     for (let drawable of drawables) {
       prog.draw(drawable);
