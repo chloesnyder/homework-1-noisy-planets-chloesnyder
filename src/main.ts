@@ -96,6 +96,7 @@ function main() {
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
+ // renderer.shadowMapEnabled = true;
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -222,7 +223,7 @@ renderer.render(camera, planetShader, [
 ], vec4color, time, eye, light, tectonic_plates, planetModel);
 
   var moonOut = mat4.create();
-  var moonRot = quat.rotateY(quat.create(), quat.create(), 2 * rotSpeed);
+  var moonRot = quat.rotateY(quat.create(), quat.create(), -rotSpeed / 27);
   // if rotSpeed = rate that planet goes in the day, and it takes 27 days for the moon to orbit the earth,
   // then the moon rotates at 1/27th rotation's speed
   var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), rotSpeed / 27);

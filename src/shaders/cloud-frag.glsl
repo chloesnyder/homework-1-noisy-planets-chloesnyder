@@ -11,7 +11,10 @@
 // position, light position, and vertex color.
 precision highp float;
 
+#define PI 3.1415926535897932384626433832795
+
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
+uniform float u_Time;
 
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
@@ -22,6 +25,17 @@ in vec4 fs_Pos;
 
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
+
+float lin_interp(float a, float b, float t)
+{
+   return a * (1.f - t) + b * t;
+}
+
+float cos_interp(float a, float b, float t)
+{
+    float cos_t = (1.f - cos(t * PI)) * .5f;
+    return lin_interp(a,b,cos_t);
+}
 
 float noise(vec3 x)
 {
@@ -73,6 +87,8 @@ vec3 curlNoise (vec3 v)
     float n1, n2, n3, a, b, c;
     vec3 curl;
 
+   // v += vec3(cos(u_Time / 100.f), sin(u_Time / 100.0), tan(u_Time / 100.0));
+
     n1 = perlinNoise(v + vec3(0.0, eps, 0.0));
     n2 = perlinNoise(v - vec3(0.0, eps, 0.0));
     a = (n1 - n2) / (2.0 * eps);
@@ -103,7 +119,7 @@ vec3 curlNoise (vec3 v)
 
     curl.z = a - b;
 
-    return normalize(curl);
+    return normalize(cos(u_Time / 100.f) * curl);
 }
 
 float fbm(vec3 x, int octaves) 
@@ -114,9 +130,11 @@ float fbm(vec3 x, int octaves)
     float maxPossible = 0.0;
     float frequency = 5.0;
 
+    float t =  u_Time / 100000.0;
+
     for(int i = 0; i < octaves; ++i)
     {
-        total += amplitude * perlinNoise(x * frequency); // 3D value noise function
+        total += amplitude * perlinNoise(x * frequency * t); // 3D value noise function
         maxPossible += amplitude;
         amplitude *= persistence;
         frequency *= 2.0;
@@ -128,8 +146,9 @@ float fbm(vec3 x, int octaves)
 void main()
 {
     // Material base color (before shading)
-        float alpha = 1.0 - fbm(vec3(fs_Pos), 20);
-        vec4 diffuseColor = vec4(1.0, 1.0, 1.0, alpha / 7.0);//alpha * vec4(curlNoise(vec3(fs_Pos)), alpha);
+        float alpha = 1.0 - fbm(vec3(fs_Pos) + vec3((u_Time / 50.0)), 15);
+        alpha = cos_interp(alpha / 2.0, alpha / 7.0, dot(vec3(u_Time / 100.0), vec3(fs_Pos)));
+        vec4 diffuseColor = vec4(1.0, 1.0, 1.0, alpha);
 
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
