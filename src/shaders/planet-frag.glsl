@@ -28,16 +28,16 @@ out vec4 out_Col; // This is the final output color that you will see on your
 
 
 in float isWater;
-const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
+const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
     vec4 d = normalize(sphereSurfacePt - sphereCenterPt);
     float phi = atan(d.z, d.x);
-    if(phi < 0.f) phi += PI * 2.f;
+    if(phi < 0.0) phi += PI * 2.0;
     float theta = acos(d.y);
 
-    return vec2(1.f - phi / PI, 1.f - theta / PI);
+    return vec2(1.0 - phi / PI, 1.0 - theta / PI);
 }
 
 vec3 random3D (vec3 st) {
@@ -68,18 +68,19 @@ void main() {
 
     float ambientTerm = 0.2;
     float shininess = 10.0;
-    float attenuation = 3.f;
-    float s = 0.0;
+    float attenuation = 3.0;
+    float specularTerm = 0.0;
     vec4 viewDirection = normalize(u_Eye - fs_Pos);
 
+    // Compute blinn-phong specular highlight on ocean surfaces
     if(dot(fs_Nor, fs_LightVec) > 0. && (abs(isWater - 1.0) < 0.01) )
     {
           
-        s = attenuation * pow(max(0.0, dot(reflect(-fs_LightVec, fs_Nor), viewDirection)),
+        specularTerm = attenuation * pow(max(0.0, dot(reflect(-fs_LightVec, fs_Nor), viewDirection)),
 	      shininess);
     }
 
-    float lightIntensity = diffuseTerm + ambientTerm + s;   //Add a small float value to the color multiplier
+    float lightIntensity = diffuseTerm + ambientTerm + specularTerm;   //Add a small float value to the color multiplier
                                                             //to simulate ambient lighting. This ensures that faces that are not
                                                             //lit by our point light are not completely black.
     out_Col = vec4(diffuseColor.rgb * lightIntensity, diffuseColor.a);

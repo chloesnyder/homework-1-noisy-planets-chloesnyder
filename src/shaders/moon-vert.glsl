@@ -38,17 +38,17 @@ out vec2 fs_UV;
 out float displacement;
 out vec4 fs_Tangent;
 
-const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
+const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 vec2 convertToUV(vec4 sphereSurfacePt, vec4 sphereCenterPt)
 {
 
     vec4 d = normalize(sphereSurfacePt - sphereCenterPt);
     float phi = atan(d.z, d.x);
-    if(phi < 0.f) phi += PI * 2.f;
+    if(phi < 0.0) phi += PI * 2.0;
     float theta = acos(d.y);
 
-    return vec2(1.f - phi / PI, 1.f - theta / PI);
+    return vec2(1.0 - phi / PI, 1.0 - theta / PI);
 }
 
 bool inCircle(vec2 P, vec2 center, float radius)
@@ -63,12 +63,12 @@ bool inCircle(vec2 P, vec2 center, float radius)
 
 float lin_interp(float a, float b, float t)
 {
-   return a * (1.f - t) + b * t;
+   return a * (1.0 - t) + b * t;
 }
 
 float cos_interp(float a, float b, float t)
 {
-    float cos_t = (1.f - cos(t * PI)) * .5f;
+    float cos_t = (1.0 - cos(t * PI)) * .5;
     return lin_interp(a,b,cos_t);
 }
 
@@ -121,12 +121,12 @@ vec3 squareToSphere(float theta, float phi)
 {   
     float x = sin(theta) * cos(phi);
     float y = sin(theta) * sin(phi);
-    float z = 1.f - (2.f * cos(theta));
+    float z = 1.0 - (2.0 * cos(theta));
     float e1 = cos(theta);
-    float e2 = phi / (2.f * PI);
-    float xnew = cos(2.f*PI*e2) * sqrt(1.f - z * z);
-    float ynew = sin(2.f*PI*e2) * sqrt(1.f - z * z);
-    float znew = 1.f - 2.f*e1;
+    float e2 = phi / (2.0 * PI);
+    float xnew = cos(2.0*PI*e2) * sqrt(1.0 - z * z);
+    float ynew = sin(2.0*PI*e2) * sqrt(1.0 - z * z);
+    float znew = 1.0 - 2.0*e1;
     return vec3(xnew,ynew,znew);
 }
 
@@ -152,9 +152,9 @@ void main()
     float radii[numCircles];
     int count = 0;
 
-    for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (10.f * PI/180.f))
+    for(float theta = 0.0; theta < 90.0 * PI/180.0; theta += (10.0 * PI/180.0))
     {
-        for(float phi = 0.f; phi < 2.f * PI ; phi += (30.f * PI/180.f))
+        for(float phi = 0.0; phi < 2.0 * PI ; phi += (30.0 * PI/180.0))
         {
             float fbm1 = fbm(vec2(phi, theta));
             float fbm2 = fbm(vec2(theta, phi));
@@ -162,7 +162,7 @@ void main()
             float phiOffset = cos_interp(fbm1, theta, thetaOffset);
             vec3 spherePt = squareToSphere(theta + fbm1 + phi * thetaOffset, phi + fbm2 + theta * phiOffset);
             samples[count] = spherePt;
-            radii[count] = .12f * cos_interp(thetaOffset, phiOffset, fbm1);
+            radii[count] = .12 * cos_interp(thetaOffset, phiOffset, fbm1);
             samples[count + 1] = -spherePt;
             radii[count+1] = .4 * cos_interp(fbm1, phiOffset, fbm2);
             count += 2;
@@ -170,18 +170,18 @@ void main()
     }
 
 
-    fs_Col = vec4(0.5f,0.5f,0.5f,1.f);
-    displacement = 0.f;
+    fs_Col = vec4(0.5,0.5,0.5,1.0);
+    displacement = 0.0;
     for(int i = 0; i < numCircles; i++)
     {
         float dist = distance(pos.xyz, samples[i]);
         if(dist <= radii[i])
         {
-            fs_Col = vec4(1.f,1.f,1.f,1.f);
-            float domeDist = 1.f - dist / radii[i];
+            fs_Col = vec4(1.0,1.0,1.0,1.0);
+            float domeDist = 1.0 - dist / radii[i];
             // TODO: figure out a way to randomly generate a scale factor [0,1]
-            float scale = pow(.5f, domeDist);
-            displacement += cos_interp(0.f, 1.f, scale * domeDist);
+            float scale = pow(.5, domeDist);
+            displacement += cos_interp(0.0, 1.0, scale * domeDist);
         } 
     }
 
@@ -191,9 +191,9 @@ void main()
 
     vec3 newNor = vec3(fbm) + vec3(vs_Nor);
 
-    fs_Tangent = vec4(getTangent(newNor),0.f);
+    fs_Tangent = vec4(getTangent(newNor),0.0);
     
-    pos -= displacement * vec4(newNor,0.f) * .1 * fbm;
+    pos -= displacement * vec4(newNor,0.0) * .1 * fbm;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(invTranspose * newNor, 0);          // Pass the vertex normals to the fragment shader for interpolation.

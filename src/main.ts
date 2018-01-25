@@ -96,7 +96,7 @@ function main() {
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
- // renderer.shadowMapEnabled = true;
+
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -199,7 +199,6 @@ if(controls.geometry == 'cube')
   
 // update the translation vector by rotating it around the earth
 // update the rotation by rotating it around its own y axis
-
 var rotSpeed;
 if(controls.animate)
 {

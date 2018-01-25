@@ -28,12 +28,12 @@ out vec4 out_Col; // This is the final output color that you will see on your
 
 float lin_interp(float a, float b, float t)
 {
-   return a * (1.f - t) + b * t;
+   return a * (1.0 - t) + b * t;
 }
 
 float cos_interp(float a, float b, float t)
 {
-    float cos_t = (1.f - cos(t * PI)) * .5f;
+    float cos_t = (1.0 - cos(t * PI)) * .5f;
     return lin_interp(a,b,cos_t);
 }
 
@@ -87,8 +87,6 @@ vec3 curlNoise (vec3 v)
     float n1, n2, n3, a, b, c;
     vec3 curl;
 
-   // v += vec3(cos(u_Time / 100.f), sin(u_Time / 100.0), tan(u_Time / 100.0));
-
     n1 = perlinNoise(v + vec3(0.0, eps, 0.0));
     n2 = perlinNoise(v - vec3(0.0, eps, 0.0));
     a = (n1 - n2) / (2.0 * eps);
@@ -119,7 +117,7 @@ vec3 curlNoise (vec3 v)
 
     curl.z = a - b;
 
-    return normalize(cos(u_Time / 100.f) * curl);
+    return normalize(cos(u_Time / 100.0) * curl);
 }
 
 float fbm(vec3 x, int octaves) 
@@ -153,7 +151,7 @@ void main()
         // Calculate the diffuse term for Lambert shading
         float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
         // Avoid negative lighting values
-        // diffuseTerm = clamp(diffuseTerm, 0, 1);
+         diffuseTerm = clamp(diffuseTerm, 0.0, 1.0);
 
         float ambientTerm = 0.2;
 

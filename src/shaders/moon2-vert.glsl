@@ -37,7 +37,7 @@ out vec4 fs_Pos;
 
 out vec2 fs_UV;
 
-out float displacement, dx, dy, dz;
+out float displacement;
 
 const vec4 sphereCenter = vec4(0.f,0.f,0.f,1.f);
 
@@ -104,6 +104,10 @@ void main()
     vec2 phiThetaPair[numCircles];
     int count = 0;
 
+    // Use uniform spherical distribution to sample points on the sphere
+    // From offset each point by some theta and phi offset to add randomness
+    // These samples will be the center of randomly placed circles on the moon's surface
+    // Generate a random radii. These circles will be where craters are placed 
     for(float theta = 0.f; theta < 90.f * PI/180.f; theta += (18.f * PI/180.f))
     {
         for(float phi = 0.f; phi < 2.f * PI ; phi += (16.f * PI/180.f))
@@ -124,9 +128,7 @@ void main()
     displacement = 0.f;
     for(int i = 0; i < numCircles; i++)
     {
-        // Displace along sin curve
-
-        
+        // To create crater depth,use a sin curve to displace the vertex along it's normal by some   
         float dist = distance(pos.xyz, samples[i]);
         float cx = pos.x + dist * sin(pos.z / 5.f);
         float cy = pos.y + dist * sin(pos.z / 3.f);
@@ -164,7 +166,7 @@ void main()
         
 
         float deltaPos = 5. * distance(vs_Pos, pos);
-        // was the point moved outward or inward
+        // Determine if the point should be moved outward or inward (inward = inside crater, outward = small peak outside crater)
         float posOrNeg = distance(pos, sphereCenter) - distance(vs_Pos, sphereCenter);
         vec3 col;
         if(posOrNeg >= 0.f)

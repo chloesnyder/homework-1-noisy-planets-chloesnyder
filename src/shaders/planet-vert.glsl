@@ -49,8 +49,6 @@ out vec4 fs_Pos;
 
 out float isWater;
 
-
-
 const vec4 sphereCenter = vec4(0.0,0.0,0.0,1.0);
 
 float minDist;
@@ -100,6 +98,7 @@ float noise(vec3 x)
     return mix(mix(mix( hash(n + dot(step, vec3(0., 0., 0.))), hash(n + dot(step, vec3(1., 0., 0.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 0.))), hash(n + dot(step, vec3(1., 1., 0.))), u.x), u.y), mix(mix( hash(n + dot(step, vec3(0., 0., 1.))), hash(n + dot(step, vec3(1., 0., 1.))), u.x), mix( hash(n + dot(step, vec3(0., 1., 1.))), hash(n + dot(step, vec3(1., 1., 1.))), u.x), u.y), u.z); 
 }
 
+// modified from Rachel's slides
 float noise3DtoFloat(vec3 x)
 {
     return fract(sin(dot(x, vec3(24.282432, 62.2313, 47.291))) * 53472.3274);
@@ -187,6 +186,7 @@ float mountainFbm(vec3 x, int octaves)
     return 3.0 * f3;
 }
 
+// modified from Rachel's slides
 vec3 random3D (vec3 st) {
     float x = fract(sin(dot(st.xyz,
                          vec3(12.9898,78.233,78.233)))*
@@ -207,12 +207,11 @@ vec3 winterPalette(float t)
     t = smoothstep(0.0, 1.0, t);
     t *= 3.0;
     vec3 a = vec3(1.0, 1.0, 1.0); 
-    vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
-    vec3 c = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); //a;//vec3(225.0 / 204.0, 224.0 / 255.0, 229.0 / 255.0);
+    vec3 b = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
+    vec3 c = vec3(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0); 
     vec3 d = a;
     return sqrt(a + b*cos((c*t+d)));
 }
-
 
 
 vec3 greenPalette(float t)
@@ -238,14 +237,16 @@ int to1D (int x, int y, int z, int height, int width, int depth)
     return x + y * width + z * width * depth;
 }
 
-// output a nearest grid cell index
-// assume worley outputs color of "zone"
+// Worley noise function that outputs the coordinate of the nearest grid cell to this vertex
+// instead of the minimum distance from this vertex to its nearest grid cell
+// this allows me to break up the worley noise into more of a voronoi style grid
+// and color each chunk based on its nearest grid cell coordinate
 // Thank you to Adam and Charles for helping me develop this function
 vec3 worleyNoise(vec3 p, float scalar)
 {
     vec3 color = vec3(.0);
 
-    vec3 gridSpacePoint = p * scalar; // Scalar can be 1 for now for testing
+    vec3 gridSpacePoint = p * scalar;
     minDist = 10.0;
     int i0;
     int j0;
@@ -274,7 +275,8 @@ vec3 worleyNoise(vec3 p, float scalar)
     return coord;
 }
 
-// Break up worley noise into a voronoi type diagram
+// Break up worley noise into a voronoi type diagram by using the coordinate
+// of the grid cell closest to this vertex as a color value
 vec3 colorize(vec3 coord)
 {  
     if(coord.x < .3 && coord.x > .15)
@@ -326,17 +328,18 @@ vec3 colorize(vec3 coord)
 
 float lin_interp(float a, float b, float t)
 {
-   return a * (1.f - t) + b * t;
+   return a * (1.0 - t) + b * t;
 }
 
 float cos_interp(float a, float b, float t)
 {
-    float cos_t = (1.f - cos(t * PI)) * .5f;
+    float cos_t = (1.0 - cos(t * PI)) * .5;
     return lin_interp(a,b,cos_t);
 }
 
 // use input color to determine what biome this vertex lies on
-// calculate noise function
+// biomes are color coded for debugging purposes
+// calculate noise functions for different biomes
 float biomes(vec3 c)
 {
     float epsilon = .0001;
@@ -358,7 +361,6 @@ float biomes(vec3 c)
     {
         isWater = 1.0;
         float time = 40.0 + pow(u_Time, .5);
-        //TODO: animate ocean?
         t = fbm(vs_Pos.yz);
         fs_Col = vec4(bluePalette(t),1.0);
         return t;
@@ -366,7 +368,7 @@ float biomes(vec3 c)
     // FORESTS
     else if (all(lessThan(abs(c) - yellow, vec3(epsilon)))) 
     {
-        t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.f);
+        t = hash(vs_Pos.x * vs_Pos.y) * noise(vs_Pos.xyz) + noise(71324382.0);
         fs_Col = vec4(greenPalette(t),1.0);
         t *= (1.0 - minDist);
         return t;
@@ -380,7 +382,8 @@ float biomes(vec3 c)
         t = mountainFbm(vs_Pos.xyz, 6);
         fs_Col = vec4(winterPalette(3.0 - t),1.0);
         return t;
-        
+
+     // Shouldn't hit this case   
     } else {
         fs_Col = vec4(c,1.0);;
         return 1.0f;
@@ -395,7 +398,7 @@ void main()
     vec4 worleyColor = vec4(worley * (1.0 - minDist), 1.);
     vec3 c = colorize(worley);
     float displacement = biomes(c);
-    vec4 color =  vec4(c, 1.0);                         // Pass the vertex colors to the fragment shader for interpolation
+    vec4 color =  vec4(c, 1.0);                         
 
     fs_Pos = vs_Nor * displacement * .1 + vec4(pos,1.0);
     //fs_Col = color;

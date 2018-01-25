@@ -42,10 +42,10 @@ void main()
 {
         vec3 b = vec3(0.6, 0.6, 0.7);
         vec3 c = vec3(0.2, 0.2, 0.2);
-        vec3 d = vec3(8.f, 8.f, 9.f);
-        vec3 a = vec3(0.f, 0.0f, 0.f);
+        vec3 d = vec3(8.0, 8.0, 9.0);
+        vec3 a = vec3(0.0, 0.0f, 0.0);
 
-       vec4 diffuseColor = vec4(palette(displacement, a, b, c, d),1.f); // + fs_Nor
+       vec4 diffuseColor = vec4(palette(displacement, a, b, c, d),1.0); // + fs_Nor
 
 
                                                             //vec4 diffuseColor = u_Color;
