@@ -37,6 +37,7 @@ const controls = {
   tectonic_plates: Math.sqrt(3.0),
   rotationSpeed: 50,
   animate: true,
+  'clouds': true,
 };
 
 
@@ -76,6 +77,7 @@ function main() {
   gui.add(controls, 'tectonic_plates', 1, 10).step(.01);
   gui.add(controls, 'rotationSpeed', 1, 100).step(1);
   gui.add(controls, 'animate');
+  gui.add(controls, 'clouds');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -229,8 +231,11 @@ if(controls.animate)
   icosphere
 ], vec4color, time, eye, light, tectonic_plates, planetModel);
 
+
+if(controls.clouds)
+{
  var cloudsOut = mat4.create();
- var cloudsRot = quat.rotateZ(quat.create(), quat.create(), rotSpeed);
+ var cloudsRot = quat.rotateX(quat.create(), quat.create(), rotSpeed);
  var cloudsPos = vec3.fromValues(0,0,0);
  var cloudsScale = vec3.fromValues(1.1, 1.1, 1.1);
  var cloudsOrigin = vec3.fromValues(0, 0, 0);
@@ -239,6 +244,7 @@ if(controls.animate)
 renderer.render(camera, cloudShader, [
   icosphere
 ], vec4color, time, eye, light, tectonic_plates, cloudsModel)
+}
 
     stats.end();
     time++;
