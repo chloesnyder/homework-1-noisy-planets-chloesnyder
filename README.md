@@ -1,44 +1,16 @@
 # CIS 566 Project 1: Noisy Planets
 
-## Objective
-- Continue practicing WebGL and Typescript
-- Experiment with noise functions to procedurally generate the surface of a planet
-- Review surface reflection models
+Name: Chloe Snyder
+Pennkey: csny
 
-## Base Code
-You'll be using the same base code as in homework 0.
-
-## Assignment Details
-- Update the basic scene from your homework 0 implementation so that it renders
-an icosphere once again. We recommend increasing the icosphere's subdivision
-level to 6 so you have more vertices with which to work.
-- Write a new GLSL shader program that incorporates various noise functions and
-noise function permutations to offset the surface of the icosphere and modify
-the color of the icosphere so that it looks like a planet with geographic
-features. Try making formations like mountain ranges, oceans, rivers, lakes,
-canyons, volcanoes, ice caps, glaciers, or even forests. We recommend using
-3D noise functions whenever possible so that you don't have UV distortion,
-though that effect may be desirable if you're trying to make the poles of your
-planet stand out more.
-- Implement various surface reflection models (e.g. Lambertian, Blinn-Phong,
-Matcap/Lit Sphere, Raytraced Specular Reflection) on the planet's surface to
-better distinguish the different formations (and perhaps even biomes) on the
-surface of your planet. Make sure your planet has a "day" side and a "night"
-side; you could even place small illuminated areas on the night side to
-represent cities lit up at night.
-- Add GUI elements via dat.GUI that allow the user to modify different
-attributes of your planet. This can be as simple as changing the relative
-location of the sun to as complex as redistributing biomes based on overall
-planet temperature. You should have at least three modifiable attributes.
-- Have fun experimenting with different features on your planet. If you want,
-you can even try making multiple planets! Your score on this assignment is in
-part dependent on how interesting you make your planet, so try to
-experiment with as much as you can!
+github.io demo: https://chloesnyder.github.io/homework-1-noisy-planets-chloesnyder/
 
 For reference, here is a planet made by your TA Dan last year for this
 assignment:
 
-![](danPlanet.png)
+![](moon.png)
+![](planet1.png)
+![](planet2.png)
 
 Notice how the water has a specular highlight, and how there's a bit of
 atmospheric fog near the horizon of the planet. This planet used only simple
