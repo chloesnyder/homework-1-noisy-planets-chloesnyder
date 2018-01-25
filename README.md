@@ -8,21 +8,19 @@ github.io demo: https://chloesnyder.github.io/homework-1-noisy-planets-chloesnyd
 For reference, here is a planet made by your TA Dan last year for this
 assignment:
 
-![](moon.png)
 ![](planet1.png)
 ![](planet2.png)
+![](moon.png)
 
-Notice how the water has a specular highlight, and how there's a bit of
-atmospheric fog near the horizon of the planet. This planet used only simple
-Fractal Brownian Motion to create its mountainous shapes, but we expect you all
-can do something much more exciting! If we were to grade this planet by the
-standards for this year's version of the assignment, it would be a B or B+.
-
-## Useful Links
-- [Implicit Procedural Planet Generation](https://static1.squarespace.com/static/58a1bc3c3e00be6bfe6c228c/t/58a4d25146c3c4233fb15cc2/1487196929690/ImplicitProceduralPlanetGeneration-Report.pdf)
+##External Resources
+Exact usages are cited in code comments
 - [Curl Noise](https://petewerner.blogspot.com/2015/02/intro-to-curl-noise.html)
 - [GPU Gems Chapter on Perlin Noise](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html)
 - [Worley Noise Implementations](https://thebookofshaders.com/12/)
+-[Some noise functions taken from/modified from shadertoy](https://www.shadertoy.com/view/4dS3Wd)
+-[Value noise](http://www.iquilezles.org/www/articles/morenoise/morenoise.htm)
+-[Modified an FBM from here](https://shaderfrog.com/app/editor)
+-[RGB Color picker](https://www.rapidtables.com/web/color/RGB_Color.html)
 
 
 ## Submission

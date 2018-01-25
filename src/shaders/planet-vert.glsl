@@ -168,8 +168,6 @@ float mountainFbm(vec3 x, int octaves)
 
     for(int i = 0; i < octaves; ++i)
     {
-        //float freq = pow(1.5, float(i));
-       // float amp = pow(persistence, float(i));
         total += amplitude * mountainNoise(x * frequency); // 3D value noise function
         maxPossible += amplitude;
         amplitude *= persistence;
@@ -401,7 +399,6 @@ void main()
     vec4 color =  vec4(c, 1.0);                         
 
     fs_Pos = vs_Nor * displacement * .1 + vec4(pos,1.0);
-    //fs_Col = color;
 
     mat3 invTranspose = mat3(u_ModelInvTr);
     fs_Nor = vec4(normalize(invTranspose * vec3(vs_Nor)), 0);          // Pass the vertex normals to the fragment shader for interpolation.
