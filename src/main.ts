@@ -1,4 +1,4 @@
-import {vec3, vec4} from 'gl-matrix';
+import {vec3, vec4, mat4, quat} from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Icosphere from './geometry/Icosphere';
@@ -19,6 +19,8 @@ let time = 0;
 let currShader: ShaderProgram;
 let currGeometry: Drawable;
 let numTesselations = 7;
+
+let moonTransform: mat4;
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
@@ -44,6 +46,8 @@ function loadScene() {
   square.create();
   cube = new Cube(vec3.fromValues(0, 0, 0));
   cube.create();
+
+
 };
 
 
@@ -62,7 +66,7 @@ function main() {
   gui.add(controls, 'tesselations', 0, 8).step(1);
   gui.addColor(controls, 'color');
   gui.add(controls, 'Load Scene');
-  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon', 'moon2', 'planet']);
+  gui.add(controls,'shader', ['lambert', 'normal', 'melty blob', 'drippy', 'moon', 'planet']);
   gui.add(controls, 'geometry',['cube', 'icosphere', 'square'] );
   gui.add(controls, 'light_x', -200, 200).step(1);
   gui.add(controls, 'light_y', -200, 200).step(1);
@@ -177,18 +181,32 @@ if(controls.geometry == 'cube')
     changeShader();
     changeGeometry();
 
-    /*renderer.render(camera, currShader, [
-       currGeometry
-    ], vec4color, time, eye);*/
+  
+// update the translation vector by rotating it around the earth
+// update the rotation by rotating it around its own y axis
 
-  //   renderer.render(camera, planetShader, [
-  //     icosphere
-  //  ], vec4color, time, eye, light, tectonic_plates);
-
+  var moonOut = mat4.create();
+  var moonRot = quat.rotateY(quat.create(), quat.create(), time / 100);
+  var moonPos = vec3.fromValues(3,1,0);
+  var moonScale = vec3.fromValues(.25, .25, .25);
+  var moonOrigin = vec3.fromValues(0, 0, 0);
+  var moonModel = mat4.fromRotationTranslationScaleOrigin(moonOut, moonRot, moonPos, moonScale, moonOrigin);
 
    renderer.render(camera, moonShader, [
     icosphere
- ], vec4color, time, eye, light, tectonic_plates);
+ ], vec4color, time, eye, light, tectonic_plates, moonModel);
+
+ var planetOut = mat4.create();
+ var planetRot = quat.rotateY(quat.create(), quat.create(), time / 100);
+ var planetPos = vec3.fromValues(0,0,0);
+ var planetScale = vec3.fromValues(1, 1, 1);
+ var planetOrigin = vec3.fromValues(0, 0, 0);
+ var planetModel = mat4.fromRotationTranslationScaleOrigin(planetOut, planetRot, planetPos, planetScale, planetOrigin);
+
+
+ renderer.render(camera, planetShader, [
+  icosphere
+], vec4color, time, eye, light, tectonic_plates, planetModel);
 
     stats.end();
     time++;
