@@ -34,6 +34,7 @@ const controls = {
   light_y: 20,
   light_z: 20,
   tectonic_plates: Math.sqrt(3.0),
+  rotationSpeed: 50
 };
 
 
@@ -46,7 +47,6 @@ function loadScene() {
   square.create();
   cube = new Cube(vec3.fromValues(0, 0, 0));
   cube.create();
-
 
 };
 
@@ -72,6 +72,7 @@ function main() {
   gui.add(controls, 'light_y', -200, 200).step(1);
   gui.add(controls, 'light_z', -200, 200).step(1);
   gui.add(controls, 'tectonic_plates', 1, 10).step(.01);
+  gui.add(controls, 'rotationSpeed', 1, 100).step(1);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -186,8 +187,8 @@ if(controls.geometry == 'cube')
 // update the rotation by rotating it around its own y axis
 
   var moonOut = mat4.create();
-  var moonRot = quat.rotateY(quat.create(), quat.create(), time / 100);
-  var moonPos = vec3.fromValues(3,1,0);
+  var moonRot = quat.rotateY(quat.create(), quat.create(), time / (.5 * controls.rotationSpeed));
+  var moonPos = vec3.rotateY(vec3.create(), vec3.fromValues(3,1,0), vec3.fromValues(0, 0, 0), time / controls.rotationSpeed);//vec3.fromValues(3,1,0);
   var moonScale = vec3.fromValues(.25, .25, .25);
   var moonOrigin = vec3.fromValues(0, 0, 0);
   var moonModel = mat4.fromRotationTranslationScaleOrigin(moonOut, moonRot, moonPos, moonScale, moonOrigin);
@@ -197,7 +198,7 @@ if(controls.geometry == 'cube')
  ], vec4color, time, eye, light, tectonic_plates, moonModel);
 
  var planetOut = mat4.create();
- var planetRot = quat.rotateY(quat.create(), quat.create(), time / 100);
+ var planetRot = quat.rotateY(quat.create(), quat.create(), time / controls.rotationSpeed);
  var planetPos = vec3.fromValues(0,0,0);
  var planetScale = vec3.fromValues(1, 1, 1);
  var planetOrigin = vec3.fromValues(0, 0, 0);
